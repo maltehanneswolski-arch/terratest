@@ -5,6 +5,8 @@ import { GameNavbar } from '@/components/ui/game-navbar';
 import { ROWS } from './country-detective-data';
 import { META } from './country-detective-meta';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 import { canonicalizeCountry, getCountryMetricPool, getMetricById, isPlayableCountryName, publicMetricLabel } from '@/lib/metricData';
 
 type V = string | number | null;
@@ -938,6 +940,7 @@ function sectionTitle(text: string, sub: string) {
 
 export default function CountryDetectivePage() {
   const [multiState, setMultiState] = useState<MultiDayState | null>(null);
+  const { record: recordRound } = useGameStats('country-detective');
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
@@ -1029,6 +1032,19 @@ export default function CountryDetectivePage() {
     }));
     setInput('');
     setSuggestions([]);
+
+    if (correct || nextAttempts >= MAX_ATTEMPTS) {
+      // Fewer attempts scores higher; a miss scores zero. Keyed on the puzzle's
+      // target so each round is counted once.
+      recordRound(
+        {
+          score: correct ? MAX_ATTEMPTS - nextAttempts + 1 : 0,
+          maxScore: MAX_ATTEMPTS,
+          won: correct,
+        },
+        `${multiState?.puzzleDate ?? ''}-${currentRound.targetIndex}`,
+      );
+    }
   }
 
   function revealHint(level: 1 | 2) {
@@ -1283,6 +1299,7 @@ export default function CountryDetectivePage() {
                 {hintCount > 0 ? ` You used ${hintCount} bonus hint${hintCount === 1 ? '' : 's'}.` : ''}
               </p>
               <div className="mt-5 text-4xl font-black tracking-tight text-cyan-700 dark:text-cyan-300">{target}</div>
+              <GameStatsBar gameId="country-detective" className="mx-auto mt-5 max-w-md" />
             </div>
 
             {currentRound.guesses.length > 0 && (

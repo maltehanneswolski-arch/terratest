@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { landData } from '@/mocks/area-data';
 import { COUNTRY_METADATA } from '@/pages/game/data/countryMetadata';
@@ -514,6 +516,7 @@ export default function BorderlinePage() {
   const [revealedCountry, setRevealedCountry] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const [solved, setSolved] = useState(false);
+  const { record: recordRound } = useGameStats('borderline');
   const [feedback, setFeedback] = useState<{ text: string; tone: HintTone } | null>(null);
   const [showRules, setShowRules] = useState(true);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
@@ -550,6 +553,12 @@ export default function BorderlinePage() {
 
     setSolved(didSolve);
     setFinished(true);
+    // Score = tries remaining, so solving on the first guess scores highest.
+    // Keyed on the border id so the round is counted once.
+    recordRound(
+      { score: didSolve ? MAX_TRIES - attemptsUsed + 1 : 0, maxScore: MAX_TRIES, won: didSolve },
+      currentBorder.id,
+    );
     setRoundResults((current) => {
       const next = [...current];
       next[currentRoundIndex] = {
@@ -925,10 +934,13 @@ export default function BorderlinePage() {
               {challengeComplete ? (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                      <i className="ri-calendar-check-line text-violet-600 dark:text-violet-400"></i>
-                      Daily summary
-                    </h2>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i className="ri-calendar-check-line text-violet-600 dark:text-violet-400"></i>
+                        Daily summary
+                      </h2>
+                      <GameStatsBar gameId="borderline" className="mt-3" />
+                    </div>
 
                     <div className="relative">
                       <button

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 interface CountryData {
   Country: string;
@@ -720,6 +722,8 @@ export default function CompassPage() {
   const [selectedContinent, setSelectedContinent] = useState<string>('');
   const [priorityFactors, setPriorityFactors] = useState<string[]>([]);
   const [showRules, setShowRules] = useState(false);
+  const { record: recordRun } = useGameStats('dream-country');
+  const runIdRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const factors = [
@@ -833,6 +837,11 @@ export default function CompassPage() {
     
     scores.sort((a, b) => b.score -a.score);
     setResults(scores);
+    // Dream Country is a preference quiz with no score, so only the completion
+    // count is meaningful. Recorded here — the other setResults call site is a
+    // continent re-filter on the results screen, not a new run.
+    recordRun({}, `run-${runIdRef.current}`);
+    runIdRef.current += 1;
     setCurrentStep(-1);
   };
 
@@ -979,6 +988,14 @@ export default function CompassPage() {
             <button onClick={resetQuestions} className="bg-rose-500 hover:bg-rose-600 border border-rose-600 text-white px-4 py-2 rounded-lg transition-all shadow-md whitespace-nowrap cursor-pointer transform hover:scale-105 active:scale-95">
               Retake Survey
             </button>
+
+            {/* No score in this game, so only the completion count is shown. */}
+            <GameStatsBar
+              gameId="dream-country"
+              showStreak={false}
+              showScore={false}
+              className="mt-4 max-w-xs"
+            />
           </div>
 
           <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">

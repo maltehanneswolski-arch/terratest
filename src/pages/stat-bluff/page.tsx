@@ -3,6 +3,8 @@ import { formatMetricValue, getCountryMetricPool, getMeaningfulDifference, getMe
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { getCountryCode } from '@/lib/countryFlags';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 type BluffCard = {
   datasetId: string;
@@ -183,6 +185,7 @@ export default function StatBluffPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [streak, setStreak] = useState(0);
+  const { record: recordAnswer } = useGameStats('stat-bluff');
   const [totalPlayed, setTotalPlayed] = useState(0);
   const [showRules, setShowRules] = useState(true);
 
@@ -201,6 +204,9 @@ export default function StatBluffPage() {
     setRevealed(true);
     setTotalPlayed((p) => p + 1);
     setStreak(correct ? (s) => s + 1 : () => 0);
+    // Each card reveal is a win or a loss, so `won` drives the shared streak.
+    // Keyed on the round id so a double render can't count it twice.
+    recordAnswer({ won: correct }, `answer-${totalPlayed}`);
   }
 
   function nextRound() {
@@ -397,6 +403,8 @@ export default function StatBluffPage() {
                   {totalPlayed} round{totalPlayed !== 1 ? 's' : ''} played this session
                 </div>
               )}
+
+              <GameStatsBar gameId="stat-bluff" showScore={false} className="mt-3" />
             </div>
 
             {/* Result after reveal */}

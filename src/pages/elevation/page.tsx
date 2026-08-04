@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { readStoredJson } from '@/lib/storage';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 import { CityCard } from './components/CityCard';
 import { GameStats } from './components/GameStats';
 import { GameOver } from './components/GameOver';
@@ -25,12 +27,6 @@ interface GameStats {
   averageStreak: number;
   totalCorrect: number;
   totalAttempts: number;
-}
-
-interface GlobalStats {
-  totalPlayers: number;
-  averageScore: number;
-  scoreDistribution: { range: string; percentage: number; count: number }[];
 }
 
 // Country name to ISO code mapping
@@ -196,7 +192,6 @@ const cityDatabase: City[] = [
   { name: 'Mbabane', country: 'Eswatini', elevation: 1243 },
   { name: 'Tehran', country: 'Iran', elevation: 1200 },
   { name: 'Kampala', country: 'Uganda', elevation: 1190 },
-  { name: 'Cape Town', country: 'South Africa', elevation: 25 },
   { name: 'Calgary', country: 'Canada', elevation: 1045 },
   { name: 'Andorra la Vella', country: 'Andorra', elevation: 1023 },
   { name: 'Gaborone', country: 'Botswana', elevation: 1014 },
@@ -217,7 +212,6 @@ const cityDatabase: City[] = [
 
   // Lower elevation cities (100-500m)
   { name: 'Vaduz', country: 'Liechtenstein', elevation: 460 },
-  { name: 'Algiers', country: 'Algeria', elevation: 24 },
   { name: 'Salzburg', country: 'Austria', elevation: 424 },
   { name: 'Zurich', country: 'Switzerland', elevation: 408 },
   { name: 'Prague', country: 'Czech Republic', elevation: 399 },
@@ -227,7 +221,6 @@ const cityDatabase: City[] = [
   { name: 'Skopje', country: 'North Macedonia', elevation: 245 },
   { name: 'Luxembourg', country: 'Luxembourg', elevation: 231 },
   { name: 'New Delhi', country: 'India', elevation: 216 },
-  { name: 'Auckland', country: 'New Zealand', elevation: 20 },
   { name: 'Kiev', country: 'Ukraine', elevation: 179 },
   { name: 'Vientiane', country: 'Laos', elevation: 174 },
   { name: 'Lyon', country: 'France', elevation: 173 },
@@ -236,6 +229,9 @@ const cityDatabase: City[] = [
   { name: 'Zagreb', country: 'Croatia', elevation: 158 },
   { name: 'Moscow', country: 'Russia', elevation: 156 },
   { name: 'Nicosia', country: 'Cyprus', elevation: 150 },
+  { name: 'Cape Town', country: 'South Africa', elevation: 25 },
+  { name: 'Algiers', country: 'Algeria', elevation: 24 },
+  { name: 'Auckland', country: 'New Zealand', elevation: 20 },
   { name: 'Rabat', country: 'Morocco', elevation: 135 },
   { name: 'Milan', country: 'Italy', elevation: 122 },
   { name: 'Belgrade', country: 'Serbia', elevation: 117 },
@@ -311,11 +307,6 @@ export default function ElevationPage() {
     totalCorrect: 0,
     totalAttempts: 0
   });
-  const [globalStats, setGlobalStats] = useState<GlobalStats>({
-    totalPlayers: 0,
-    averageScore: 0,
-    scoreDistribution: []
-  });
   const [usedCities, setUsedCities] = useState<Set<string>>(new Set());
   const [showRules, setShowRules] = useState(true);
 
@@ -324,6 +315,8 @@ export default function ElevationPage() {
   // overwrites the stored stats — and under StrictMode's double effect pass it
   // wiped the user's best streak on every mount.
   const statsLoadedRef = useRef(false);
+  const { record: recordRun } = useGameStats('elevation');
+  const runIdRef = useRef(0);
 
   // Load stats from localStorage on component mount
   useEffect(() => {
@@ -332,8 +325,6 @@ export default function ElevationPage() {
       setGameStats(savedStats);
     }
 
-    // Load global stats from localStorage
-    loadGlobalStats();
     statsLoadedRef.current = true;
   }, []);
 
@@ -341,106 +332,16 @@ export default function ElevationPage() {
   useEffect(() => {
     if (!statsLoadedRef.current) return;
     localStorage.setItem('elevationGameStats', JSON.stringify(gameStats));
-    // Update global stats when personal stats change
-    updateGlobalStats();
   }, [gameStats]);
 
-  const loadGlobalStats = () => {
-    const savedGlobalStats = readStoredJson<GlobalStats | null>('elevationGlobalStats', null);
-    if (savedGlobalStats) {
-      setGlobalStats(savedGlobalStats);
-    } else {
-      // Initialize empty global stats
-      setGlobalStats({
-        totalPlayers: 0,
-        averageScore: 0,
-        scoreDistribution: [
-          { range: '0-2', percentage: 0, count: 0 },
-          { range: '3-5', percentage: 0, count: 0 },
-          { range: '6-8', percentage: 0, count: 0 },
-          { range: '9-11', percentage: 0, count: 0 },
-          { range: '12-14', percentage: 0, count: 0 },
-          { range: '15-17', percentage: 0, count: 0 },
-          { range: '18-20', percentage: 0, count: 0 },
-          { range: '21+', percentage: 0, count: 0 }
-        ]
-      });
-    }
-  };
-
-  const updateGlobalStats = () => {
-    const allPlayerStats = readStoredJson<any[]>('allPlayerStats', []);
-    
-    // Check if current player already exists
-    const playerId = localStorage.getItem('playerId') || generatePlayerId();
-    const existingPlayerIndex = allPlayerStats.findIndex((p: any) => p.id === playerId);
-    
-    if (existingPlayerIndex >= 0) {
-      // Update existing player
-      allPlayerStats[existingPlayerIndex] = {
-        id: playerId,
-        bestStreak: gameStats.bestStreak,
-        totalGames: gameStats.totalGames
-      };
-    } else {
-      // Add new player
-      allPlayerStats.push({
-        id: playerId,
-        bestStreak: gameStats.bestStreak,
-        totalGames: gameStats.totalGames
-      });
-    }
-    
-    localStorage.setItem('allPlayerStats', JSON.stringify(allPlayerStats));
-    localStorage.setItem('playerId', playerId);
-    
-    // Calculate global statistics
-    const totalPlayers = allPlayerStats.length;
-    const totalScore = allPlayerStats.reduce((sum: number, player: any) => sum + player.bestStreak, 0);
-    const averageScore = totalPlayers > 0 ? totalScore / totalPlayers : 0;
-    
-    // Calculate distribution
-    const distribution = [
-      { range: '0-2', percentage: 0, count: 0 },
-      { range: '3-5', percentage: 0, count: 0 },
-      { range: '6-8', percentage: 0, count: 0 },
-      { range: '9-11', percentage: 0, count: 0 },
-      { range: '12-14', percentage: 0, count: 0 },
-      { range: '15-17', percentage: 0, count: 0 },
-      { range: '18-20', percentage: 0, count: 0 },
-      { range: '21+', percentage: 0, count: 0 }
-    ];
-    
-    allPlayerStats.forEach((player: any) => {
-      const score = player.bestStreak;
-      if (score <= 2) distribution[0].count++;
-      else if (score <= 5) distribution[1].count++;
-      else if (score <= 8) distribution[2].count++;
-      else if (score <= 11) distribution[3].count++;
-      else if (score <= 14) distribution[4].count++;
-      else if (score <= 17) distribution[5].count++;
-      else if (score <= 20) distribution[6].count++;
-      else distribution[7].count++;
-    });
-    
-    // Calculate percentages
-    distribution.forEach(item => {
-      item.percentage = totalPlayers > 0 ? (item.count / totalPlayers) * 100 : 0;
-    });
-    
-    const newGlobalStats = {
-      totalPlayers,
-      averageScore,
-      scoreDistribution: distribution
-    };
-    
-    setGlobalStats(newGlobalStats);
-    localStorage.setItem('elevationGlobalStats', JSON.stringify(newGlobalStats));
-  };
-
-  const generatePlayerId = () => {
-    return 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-  };
+  /*
+   * The former updateGlobalStats() built an "allPlayerStats" array in
+   * localStorage and derived totalPlayers / averageScore / a score distribution
+   * from it. Because localStorage is per-browser, that array only ever held this
+   * one visitor, so "global" figures were always a sample of one. The values
+   * were never rendered either. Real cross-player stats need a server; the
+   * per-browser numbers now come from @/lib/gameStats instead.
+   */
 
   // Improved random city selection with better diversity
   const getRandomCityPair = async (): Promise<[City, City]> => {
@@ -534,6 +435,9 @@ export default function ElevationPage() {
         setShowElevation(false);
       }, 1200);
     } else {
+      // Shared per-browser stats: the streak reached is this run's score.
+      recordRun({ score: streak }, `run-${runIdRef.current}`);
+      runIdRef.current += 1;
       setGameOver(true);
       setGameStats(prev => ({
         ...prev,
@@ -631,12 +535,15 @@ Can you beat my score? Play at: ${window.location.href}`;
         <div className="max-w-6xl mx-auto">
           {/* Game Content */}
           {gameOver ? (
-            <GameOver 
-              finalStreak={streak}
-              stats={gameStats}
-              onRestart={startNewGame}
-              onShare={shareResults}
-            />
+            <>
+              <GameOver 
+                finalStreak={streak}
+                stats={gameStats}
+                onRestart={startNewGame}
+                onShare={shareResults}
+              />
+              <GameStatsBar gameId="elevation" showStreak={false} className="mx-auto mt-4 max-w-md" />
+            </>
           ) : (
             <div className="mt-8">
               <div className="text-center mb-8">

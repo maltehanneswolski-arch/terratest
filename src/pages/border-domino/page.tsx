@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { CountryInput } from './components/CountryInput';
 import { COUNTRY_METADATA } from '@/pages/game/data/countryMetadata';
 import { getFlagUrl } from '@/lib/countryFlags';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 interface Country {
   name: string;
@@ -366,6 +368,8 @@ export default function BorderDominoPage() {
   const [currentCountry, setCurrentCountry] = useState<Country | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState('');
+  const { record: recordRun } = useGameStats('border-domino');
+  const runIdRef = useRef(0);
   const [score, setScore] = useState(0);
   const [optimalChain, setOptimalChain] = useState<Country[]>([]);
   const [optimalChainLoading, setOptimalChainLoading] = useState(true);
@@ -560,6 +564,10 @@ export default function BorderDominoPage() {
   };
 
   const finishGame = (reason: string) => {
+    // Score is the chain length reached. Keyed on the run so the same game
+    // can't be counted twice if finishGame is somehow reached again.
+    recordRun({ score }, `run-${runIdRef.current}`);
+    runIdRef.current += 1;
     setGameOverReason(reason);
     setGameOver(true);
   };
@@ -685,6 +693,7 @@ export default function BorderDominoPage() {
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 text-center border border-slate-200 dark:border-slate-700">
                   <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">Current chain length</div>
                   <div className="text-5xl font-bold text-emerald-600 dark:text-emerald-400">{score}</div>
+                  <GameStatsBar gameId="border-domino" showStreak={false} className="mt-4" />
                 </div>
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
                   <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">Today&apos;s restriction</div>

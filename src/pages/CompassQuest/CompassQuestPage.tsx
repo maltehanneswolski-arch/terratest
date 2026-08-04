@@ -4,6 +4,8 @@ import { GameNavbar } from '@/components/ui/game-navbar';
 import { CAPITAL_ROWS } from './compass-capital-data';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { brusselsDate } from '@/lib/brusselsTime';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 type CapitalRecord = {
   countryName: string;
@@ -243,6 +245,7 @@ export default function CompassQuestPage() {
   const [selectedAngle, setSelectedAngle] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<'playing' | 'review' | 'finished'>('playing');
+  const { record: recordRun } = useGameStats('compass-quest');
   const [results, setResults] = useState<RoundResult[]>([]);
   const [latestResult, setLatestResult] = useState<RoundResult | null>(null);
   const [copyFeedback, setCopyFeedback] = useState('');
@@ -314,6 +317,8 @@ export default function CompassQuestPage() {
   function nextRound() {
     if (phase !== 'review') return;
     if (roundIndex === MAX_ROUNDS - 1) {
+      // One record per completed daily run, keyed on the puzzle date.
+      recordRun({ score: totalScore, maxScore: MAX_ROUNDS * 100 }, dailyLabel());
       setPhase('finished');
     } else {
       setRoundIndex((p) => p + 1);
@@ -702,6 +707,8 @@ export default function CompassQuestPage() {
               <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">Compass Quest complete</h2>
               <div className="inline-block mb-4 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-rose-200 dark:border-rose-800">Daily · {dailyLabel()}</div>
               <p className="text-slate-600 dark:text-slate-400 mb-6">Three bearings, one final score. Smaller error means a better run.</p>
+
+              <GameStatsBar gameId="compass-quest" showStreak={false} className="mx-auto mb-6 max-w-md" />
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="rounded-2xl bg-rose-50 dark:bg-rose-500/10 p-5">

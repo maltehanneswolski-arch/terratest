@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { LatitudeLadderCity, loadLatitudeLadderCities } from './data';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 const ROUND_SIZE = 5;
 const MAX_SCORE = 18;
@@ -230,6 +232,17 @@ export default function LatitudeLadderPage() {
     () => new Map(results.map((r) => [r.city.id, r])),
     [results]
   );
+
+  // Record the round once it has been submitted and scored. The round's city ids
+  // form the idempotency key, so re-renders — and StrictMode's double effect
+  // pass — can't count the same round twice.
+  const { record: recordRoundStats } = useGameStats('latitude-ladder');
+  const roundKey = roundCities.map((c) => c.id).join('|');
+
+  useEffect(() => {
+    if (!submitted || results.length !== ROUND_SIZE) return;
+    recordRoundStats({ score: finalScore, maxScore: MAX_SCORE }, roundKey);
+  }, [submitted, results.length, finalScore, roundKey, recordRoundStats]);
 
   const handleNewRound = () => startNewRound(cities, recentIds);
 
@@ -479,6 +492,8 @@ export default function LatitudeLadderPage() {
                 {slots.filter(Boolean).length} / {ROUND_SIZE} placed
               </div>
             </div>
+
+            <GameStatsBar gameId="latitude-ladder" showStreak={false} className="mt-3" />
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1fr_280px]">

@@ -4,6 +4,8 @@ import { HoverButton } from '@/components/ui/hover-button';
 import { useTranslation } from 'react-i18next';
 import { countriesData } from '@/mocks/countries-capitals';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 interface CountryData {
   country: string;
@@ -129,6 +131,10 @@ export default function DailyQuizPage() {
   // generate a second question over the freshly reset game.
   const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const { record: recordRun } = useGameStats('capital-clash');
+  // Distinguishes successive runs so each is recorded once.
+  const runIdRef = useRef(0);
+
   const scheduleAfterAnswer = (callback: () => void) => {
     if (answerTimeoutRef.current !== null) clearTimeout(answerTimeoutRef.current);
     answerTimeoutRef.current = setTimeout(() => {
@@ -155,6 +161,10 @@ export default function DailyQuizPage() {
       setStreak(prev => prev + 1);
       scheduleAfterAnswer(generateNewQuestion);
     } else {
+      // The run just ended, so the streak reached is this run's score. Recorded
+      // here rather than in an effect on isGameOver so it fires exactly once.
+      recordRun({ score: streak }, `run-${runIdRef.current}`);
+      runIdRef.current += 1;
       scheduleAfterAnswer(() => setIsGameOver(true));
     }
   };
@@ -212,6 +222,8 @@ export default function DailyQuizPage() {
               Correct answers in a row
             </div>
           </div>
+
+          <GameStatsBar gameId="capital-clash" showStreak={false} className="mb-6" />
 
           {currentCountry && (
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-6">

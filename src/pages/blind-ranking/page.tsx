@@ -11,6 +11,8 @@ import { GameNavbar } from '@/components/ui/game-navbar';
 import { DraggableCountry } from './components/DraggableCountry';
 import { SlotRow } from './components/SlotRow';
 import { ResultScreen } from './components/ResultScreen';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 const TOTAL_ROUNDS = 1;
 const PER_ROUND_MAX = 18; // 5 * 3 + 3 perfect bonus
@@ -370,6 +372,8 @@ function FinalResultScreen({
             <i className="ri-share-line mr-2"></i>Copy results
           </button>
         </div>
+
+        <GameStatsBar gameId="blind-ranking" showStreak={false} className="mt-4" />
       </div>
     </div>
   );
@@ -469,6 +473,18 @@ export default function BlindRankingPage() {
   const totalScore = results.reduce((sum, r) => sum + r.points, 0);
   const perfectBonus = results.length === 5 && results.every((r) => r.guessedPosition === r.actualPosition) ? 3 : 0;
   const roundScore = totalScore + perfectBonus;
+
+  // Record each completed round once, keyed on the puzzle date plus round index
+  // so replaying the same day's round can't inflate the totals.
+  const { record: recordRoundStats } = useGameStats('blind-ranking');
+
+  useEffect(() => {
+    if (!allRoundsComplete[currentRoundIdx] || results.length !== 5) return;
+    recordRoundStats(
+      { score: roundScore, maxScore: PER_ROUND_MAX },
+      `${brusselsDate()}-r${currentRoundIdx}`,
+    );
+  }, [allRoundsComplete, currentRoundIdx, results.length, roundScore, recordRoundStats]);
 
   // All round results and scores (including current)
   const allRoundResults = useMemo<RoundResult[][]>(() => {

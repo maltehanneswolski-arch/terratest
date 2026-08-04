@@ -2,6 +2,8 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { WORLD_ORDER_METRICS, type WorldOrderCountryData, type WorldOrderMetric } from './world-order-metrics';
 import { readStoredJson } from '@/lib/storage';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 
 type GuessPosition = 'above1' | 'above2' | 'below1' | 'below2';
 
@@ -182,6 +184,7 @@ export default function WorldOrderPage() {
   const [totalScore, setTotalScore] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<GuessPosition | null>(null);
   const [gameComplete, setGameComplete] = useState(false);
+  const { record: recordRun } = useGameStats('world-order');
   const [showInstructionModal, setShowInstructionModal] = useState(true);
   const [showInlineInstructions, setShowInlineInstructions] = useState(false);
 
@@ -292,6 +295,15 @@ export default function WorldOrderPage() {
     setTotalScore(updatedTotalScore);
     setShowResults(true);
     setGameComplete(isLastQuestion);
+
+    if (isLastQuestion) {
+      // One record per completed daily game. Max is 4 guesses x 10 points per
+      // question. Keyed on the date so replaying today can't inflate totals.
+      recordRun(
+        { score: updatedTotalScore, maxScore: questions.length * 40 },
+        getCurrentBrusselsDate(),
+      );
+    }
 
     saveGameState({
       questions,
@@ -470,6 +482,8 @@ export default function WorldOrderPage() {
             <div className="text-xs font-medium text-purple-700 dark:text-purple-300">{metric.higherMeans}</div>
           </div>
         </div>
+
+        <GameStatsBar gameId="world-order" showStreak={false} className="mb-6" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>

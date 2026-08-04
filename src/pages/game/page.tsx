@@ -7,6 +7,8 @@ import { GameResult } from '@/pages/game/components/GameResult';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { brusselsDate, hashString } from '@/lib/brusselsTime';
 import { readStoredJson } from '@/lib/storage';
+import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { useGameStats } from '@/lib/gameStats';
 import {
   ALL_CITIES,
   BonusData,
@@ -106,6 +108,7 @@ export default function GamePage() {
   const [bonusData, setBonusData] = useState<BonusData>({ id: '', type: 'country', value: '', label: '', description: '' });
   const [restrictionData, setRestrictionData] = useState<RestrictionData>({ id: '', type: 'continent', value: '', label: '', icon: '', description: '' });
   const [gameResult, setGameResult] = useState<DailyGameResult | null>(null);
+  const { record: recordDaily } = useGameStats('popstack');
   const [showRules, setShowRules] = useState(true);
 
   // Get current date in Brussels timezone
@@ -197,6 +200,11 @@ export default function GamePage() {
     };
 
     setGameResult(result);
+
+    // One record per day. Score is closeness to the target, expressed as a
+    // percentage so it's comparable across days with different targets.
+    const accuracy = Math.max(0, Math.round(100 - (Math.abs(difference) / targetNumber) * 100));
+    recordDaily({ score: accuracy, maxScore: 100 }, getCurrentBrusselsDate());
 
     // Save to localStorage
     const currentDate = getCurrentBrusselsDate();
@@ -356,6 +364,8 @@ export default function GamePage() {
                     />
                   </div>
                   
+                  <GameStatsBar gameId="popstack" showStreak={false} className="mx-auto max-w-md" />
+
                   <div className="max-w-md mx-auto">
                     <CountdownTimer />
                   </div>
