@@ -246,7 +246,7 @@ export default function HomePage() {
           </section>
 
           <div className="border-t-2 border-[#101820]/10 pt-8 text-center text-xs font-bold uppercase tracking-[0.2em] text-[#101820]/30 dark:border-[#fff8e7]/10 dark:text-[#fff8e7]/25">
-            {t('homeFooter', { count: DAILY_GAMES.length + CASUAL_GAMES.length + 1 })}
+            {t('homeFooter', { total: DAILY_GAMES.length + CASUAL_GAMES.length + 1 })}
           </div>
         </div>
       </div>

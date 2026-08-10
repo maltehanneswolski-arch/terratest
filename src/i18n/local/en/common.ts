@@ -58,7 +58,7 @@ export default {
   // Compass Challenge
   compassTitle: "Geographical Compass",
   compassSubtitle: "Test your geographical knowledge!",
-  compassDescription: "Indicate your preferences and answer 25 questions to find the country that fits you the most.",
+  compassDescription: "Indicate your preferences and answer {{total}} questions to find the country that fits you the most.",
   fromCity: "From",
   toCity: "To",
   selectDirection: "Select the direction",
@@ -126,7 +126,6 @@ export default {
   q2: "I enjoy mild seasons without extreme heat or cold.",
   q3: "I don't mind long, cold winters and snowy weather.",
   q4: "I'm drawn to places with mountains and dramatic landscapes.",
-  q5: "I love exploring hills, valleys, and varied terrain.",
   q6: "I prefer flat, easy-to-navigate landscapes.",
   q7: "I want to live near big cities with lots of cultural activities.",
   q8: "I prefer quiet, rural areas over bustling metropolitan life.",
@@ -136,17 +135,13 @@ export default {
   q12: "Being close to large nature reserves and parks is important to me.",
   q13: "I need to live somewhere with a fair and reliable justice system.",
   q14: "Low corruption and honest government are essential to me.",
-  q15: "I want to feel safe and trust that laws are applied fairly.",
   q16: "I value living in a multicultural, diverse society.",
-  q17: "I want to be somewhere that welcomes people from all backgrounds.",
   q18: "Easy international travel and global connections are important to me.",
   q19: "I love being near the ocean, seas, or large lakes.",
   q20: "Beach culture and coastal living appeal to me.",
   q21: "I like the idea of living in a large country with endless space to explore.",
   q22: "I prefer smaller countries where everything is close together.",
   q23: "I want to live somewhere with incredible wildlife and nature.",
-  q24: "Seeing unique and rare species in their natural habitat excites me.",
-  q25: "Rich biodiversity and ecological variety are important to me.",
   
   // Slider labels
   notLikeMe: "Not like me",
@@ -252,7 +247,7 @@ export default {
   homeCasualTag: "Casual",
   homeCasualLabel: "Play Anytime",
   homeCasualSub: "Endless rounds — dip in whenever you feel like it.",
-  homeFooter: "{{count}} games · No account needed · Play anytime",
+  homeFooter: "{{total}} games · No account needed · Play anytime",
 
   // Game descriptions missing from the set above
   blindRankingDescription: "Sort countries without seeing their values — pure intuition.",

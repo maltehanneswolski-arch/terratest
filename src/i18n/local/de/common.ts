@@ -58,7 +58,7 @@ export default {
   // Compass Challenge
   compassTitle: "Geografischer Kompass",
   compassSubtitle: "Teste dein geografisches Wissen!",
-  compassDescription: "Gib deine Vorlieben an und beantworte 25 Fragen, um das Land zu finden, das am besten zu dir passt.",
+  compassDescription: "Gib deine Vorlieben an und beantworte {{total}} Fragen, um das Land zu finden, das am besten zu dir passt.",
   fromCity: "Von",
   toCity: "Nach",
   selectDirection: "Wähle die Richtung",
@@ -126,7 +126,6 @@ export default {
   q2: "Ich genieße milde Jahreszeiten ohne extreme Hitze oder Kälte.",
   q3: "Lange, kalte Winter und verschneites Wetter machen mir nichts aus.",
   q4: "Ich fühle mich zu Orten mit Bergen und dramatischen Landschaften hingezogen.",
-  q5: "Ich liebe es, Hügel, Täler und abwechslungsreiches Gelände zu erkunden.",
   q6: "Ich bevorzuge flache, leicht zu navigierende Landschaften.",
   q7: "Ich möchte in der Nähe großer Städte mit vielen kulturellen Aktivitäten leben.",
   q8: "Ich bevorzuge ruhige, ländliche Gebiete gegenüber geschäftigem Großstadtleben.",
@@ -136,17 +135,13 @@ export default {
   q12: "In der Nähe großer Naturschutzgebiete und Parks zu sein ist mir wichtig.",
   q13: "Ich muss irgendwo mit einem fairen und zuverlässigen Justizsystem leben.",
   q14: "Geringe Korruption und ehrliche Regierung sind mir wesentlich.",
-  q15: "Ich möchte mich sicher fühlen und darauf vertrauen, dass Gesetze fair angewendet werden.",
   q16: "Ich schätze das Leben in einer multikulturellen, vielfältigen Gesellschaft.",
-  q17: "Ich möchte irgendwo sein, das Menschen aus allen Hintergründen willkommen heißt.",
   q18: "Einfaches internationales Reisen und globale Verbindungen sind mir wichtig.",
   q19: "Ich liebe es, in der Nähe des Ozeans, der Meere oder großer Seen zu sein.",
   q20: "Strandkultur und Küstenleben sprechen mich an.",
   q21: "Ich mag die Idee, in einem großen Land mit endlosem Raum zum Erkunden zu leben.",
   q22: "Ich bevorzuge kleinere Länder, wo alles nah beieinander liegt.",
   q23: "Ich möchte irgendwo mit unglaublicher Tierwelt und Natur leben.",
-  q24: "Einzigartige und seltene Arten in ihrem natürlichen Lebensraum zu sehen, begeistert mich.",
-  q25: "Reiche Biodiversität und ökologische Vielfalt sind mir wichtig.",
   
   // Slider labels
   notLikeMe: "Nicht wie ich",
@@ -252,7 +247,7 @@ export default {
   homeCasualTag: "Locker",
   homeCasualLabel: "Jederzeit spielen",
   homeCasualSub: "Endlose Runden — spiel, wann immer dir danach ist.",
-  homeFooter: "{{count}} Spiele · Kein Konto nötig · Jederzeit spielbar",
+  homeFooter: "{{total}} Spiele · Kein Konto nötig · Jederzeit spielbar",
 
   // Fehlende Spielbeschreibungen
   blindRankingDescription: "Sortiere Länder, ohne ihre Werte zu sehen — reine Intuition.",

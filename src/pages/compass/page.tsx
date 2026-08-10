@@ -65,7 +65,6 @@ const QUESTIONS = [
   { id: 'Q2', text: 'q2', factor: 'C1', reverse: false },
   { id: 'Q3', text: 'q3', factor: 'C1', reverse: true },
   { id: 'Q4', text: 'q4', factor: 'T2', reverse: false },
-  { id: 'Q5', text: 'q5', factor: 'T2', reverse: false },
   { id: 'Q6', text: 'q6', factor: 'T2', reverse: true },
   { id: 'Q7', text: 'q7', factor: 'U1', reverse: false },
   { id: 'Q8', text: 'q8', factor: 'U1', reverse: true },
@@ -75,17 +74,13 @@ const QUESTIONS = [
   { id: 'Q12', text: 'q12', factor: 'B3', reverse: false },
   { id: 'Q13', text: 'q13', factor: 'R2', reverse: false },
   { id: 'Q14', text: 'q14', factor: 'R2', reverse: false },
-  { id: 'Q15', text: 'q15', factor: 'R2', reverse: false },
   { id: 'Q16', text: 'q16', factor: 'O3', reverse: false },
-  { id: 'Q17', text: 'q17', factor: 'O3', reverse: false },
   { id: 'Q18', text: 'q18', factor: 'O3', reverse: false },
   { id: 'Q19', text: 'q19', factor: 'W1', reverse: false },
   { id: 'Q20', text: 'q20', factor: 'W1', reverse: false },
   { id: 'Q21', text: 'q21', factor: 'V2', reverse: false },
   { id: 'Q22', text: 'q22', factor: 'V2', reverse: true },
   { id: 'Q23', text: 'q23', factor: 'NBI', reverse: false },
-  { id: 'Q24', text: 'q24', factor: 'NBI', reverse: false },
-  { id: 'Q25', text: 'q25', factor: 'NBI', reverse: false }
 ];
 
 export const COUNTRY_DATA: CountryData[] = [
@@ -841,7 +836,9 @@ export default function CompassPage() {
         const value = answers[q.id] ?? 50;
         sum += q.reverse ? (100 - value) : value;
       });
-      profile.push(sum / factorQuestions.length);
+      // Guard the divide: a factor with no questions would push NaN into the
+      // profile and silently corrupt every country score.
+      profile.push(factorQuestions.length > 0 ? sum / factorQuestions.length : 50);
     });
     
     setUserProfile(profile);
@@ -979,7 +976,8 @@ export default function CompassPage() {
     });
   };
 
-  const questionsPerStep = 3;
+  // 20 questions / 4 per page = exactly 5 pages, no short final page.
+  const questionsPerStep = 4;
   const currentQuestions = QUESTIONS.slice(
     currentStep * questionsPerStep,
     (currentStep + 1) * questionsPerStep
@@ -1210,7 +1208,7 @@ export default function CompassPage() {
             <i className="ri-compass-3-line text-rose-500 dark:text-rose-400"></i>
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-slate-600 dark:text-slate-400">
-            {t('compassDescription')}
+            {t('compassDescription', { total: QUESTIONS.length })}
           </p>
           <button
             onClick={() => setShowRules(true)}
