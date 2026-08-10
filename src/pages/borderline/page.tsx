@@ -9,10 +9,9 @@ import { getFlagUrl } from '@/lib/countryFlags';
 import { BORDERLINE_BORDERS, BorderlineEntry } from './border-data';
 
 const MAX_TRIES = 4;
-// Three borders per day, matching what the rules modal and share text already
-// promise. This was 1, so the daily challenge ended after a single border while
-// the UI still advertised "3 Rounds" — which reads as the game being stuck.
-const TOTAL_ROUNDS = 3;
+// One border per day, seeded from the Europe/Brussels date like every other
+// daily challenge: everyone gets the same trace, and it rotates at midnight.
+const TOTAL_ROUNDS = 1;
 const INITIAL_HINT_COUNT = 2;
 const MAX_SUGGESTIONS = 8;
 
@@ -179,8 +178,16 @@ function hashSeed(seed: string) {
 }
 
 function mulberry32(seed: number) {
+  // `state` must advance between calls. This previously read
+  // `let value = seed + 0x6d2b79f5`, which copies into a local and leaves the
+  // closure's seed untouched, so every draw returned an identical number. That
+  // made seededShuffle degenerate — a Fisher-Yates driven by one constant
+  // fraction — collapsing 249 borders into ~23 distinct daily picks, with
+  // Kazakhstan-Russia landing on roughly a third of all days.
+  let state = seed >>> 0;
   return () => {
-    let value = seed + 0x6d2b79f5;
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
     value = Math.imul(value ^ (value >>> 15), value | 1);
     value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
     return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
@@ -726,14 +733,14 @@ export default function BorderlinePage() {
         title="How Borderline works"
         icon="ri-route-line"
         iconGradient="from-violet-500 to-purple-600"
-        description="Each day brings 3 real border traces. For each round, search and select the two countries sharing the border. You get four tries, with stronger hints after each miss."
+        description="Each day brings one real border trace. Search and select the two countries sharing that border. You get four tries, with stronger hints after each miss."
         rules={[
-          { icon: 'ri-calendar-check-line', text: 'Every daily challenge contains 1 border round in a fixed order.' },
+          { icon: 'ri-calendar-check-line', text: 'One border per day, the same for everyone. A new trace unlocks at midnight (Brussels).' },
           { icon: 'ri-search-line', text: 'Search for countries, then select both answers from the dropdowns. Only selected countries count.' },
           { icon: 'ri-lightbulb-flash-line', text: 'After the 1st and 2nd misses, you unlock clue cards. After the 3rd miss, one country is revealed.' },
         ]}
         scoring={[
-          { pts: '3', label: 'Rounds', sub: 'per day', color: 'purple' },
+          { pts: '4', label: 'Tries', sub: 'per border', color: 'purple' },
           { pts: '4', label: 'Tries', sub: 'per border', color: 'yellow' },
           { pts: 'Hints', label: 'Progressive', sub: 'after misses', color: 'green' },
         ]}
@@ -748,7 +755,7 @@ export default function BorderlinePage() {
           Borderline
           <i className="ri-earth-line text-violet-600 dark:text-violet-400"></i>
         </h1>
-        <p className="text-slate-600 dark:text-slate-400">{TOTAL_ROUNDS} real border traces every day. Four tries per round. Search, select, solve.</p>
+        <p className="text-slate-600 dark:text-slate-400">One real border trace every day. Four tries. Search, select, solve.</p>
         <button
           onClick={() => setShowRules(true)}
           className="mt-2 inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 transition-colors cursor-pointer font-medium"
@@ -763,31 +770,6 @@ export default function BorderlinePage() {
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 text-center border border-slate-200 dark:border-slate-700">
-              {/* Round progress: without this the daily challenge gave no sense
-                  of how far along you were, so finishing one border read as the
-                  game having stalled. */}
-              <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">
-                Round {Math.min(currentRoundIndex + 1, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
-              </div>
-              <div className="mb-4 flex justify-center gap-1.5" aria-hidden="true">
-                {Array.from({ length: TOTAL_ROUNDS }, (_, i) => {
-                  const done = roundResults[i];
-                  return (
-                    <span
-                      key={i}
-                      className={`h-2 w-8 rounded-full ${
-                        done
-                          ? done.solved
-                            ? 'bg-emerald-500'
-                            : 'bg-rose-400'
-                          : i === currentRoundIndex
-                            ? 'bg-violet-500'
-                            : 'bg-slate-200 dark:bg-slate-600'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
               <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">Tries left</div>
               <div className="text-5xl font-bold text-violet-600 dark:text-violet-400">{triesLeft}</div>
             </div>
