@@ -9,7 +9,10 @@ import { getFlagUrl } from '@/lib/countryFlags';
 import { BORDERLINE_BORDERS, BorderlineEntry } from './border-data';
 
 const MAX_TRIES = 4;
-const TOTAL_ROUNDS = 1;
+// Three borders per day, matching what the rules modal and share text already
+// promise. This was 1, so the daily challenge ended after a single border while
+// the UI still advertised "3 Rounds" — which reads as the game being stuck.
+const TOTAL_ROUNDS = 3;
 const INITIAL_HINT_COUNT = 2;
 const MAX_SUGGESTIONS = 8;
 
@@ -745,7 +748,7 @@ export default function BorderlinePage() {
           Borderline
           <i className="ri-earth-line text-violet-600 dark:text-violet-400"></i>
         </h1>
-        <p className="text-slate-600 dark:text-slate-400">One real border trace every day. Four tries per round. Search, select, solve.</p>
+        <p className="text-slate-600 dark:text-slate-400">{TOTAL_ROUNDS} real border traces every day. Four tries per round. Search, select, solve.</p>
         <button
           onClick={() => setShowRules(true)}
           className="mt-2 inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 transition-colors cursor-pointer font-medium"
@@ -760,6 +763,31 @@ export default function BorderlinePage() {
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 text-center border border-slate-200 dark:border-slate-700">
+              {/* Round progress: without this the daily challenge gave no sense
+                  of how far along you were, so finishing one border read as the
+                  game having stalled. */}
+              <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">
+                Round {Math.min(currentRoundIndex + 1, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
+              </div>
+              <div className="mb-4 flex justify-center gap-1.5" aria-hidden="true">
+                {Array.from({ length: TOTAL_ROUNDS }, (_, i) => {
+                  const done = roundResults[i];
+                  return (
+                    <span
+                      key={i}
+                      className={`h-2 w-8 rounded-full ${
+                        done
+                          ? done.solved
+                            ? 'bg-emerald-500'
+                            : 'bg-rose-400'
+                          : i === currentRoundIndex
+                            ? 'bg-violet-500'
+                            : 'bg-slate-200 dark:bg-slate-600'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
               <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">Tries left</div>
               <div className="text-5xl font-bold text-violet-600 dark:text-violet-400">{triesLeft}</div>
             </div>

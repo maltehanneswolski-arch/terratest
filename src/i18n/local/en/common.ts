@@ -242,4 +242,24 @@ export default {
   // Time units
   seconds: "seconds",
   minutes: "minutes",
+
+  // Home page
+  homeBadge: "Geography Game Collection",
+  homeTagline: "Twelve games to test and sharpen your world geography knowledge. Pick one and start playing.",
+  homeDailyTag: "Daily",
+  homeDailyLabel: "Daily Challenges",
+  homeDailySub: "A new set every day — come back tomorrow for more.",
+  homeCasualTag: "Casual",
+  homeCasualLabel: "Play Anytime",
+  homeCasualSub: "Endless rounds — dip in whenever you feel like it.",
+  homeFooter: "{{count}} games · No account needed · Play anytime",
+
+  // Game descriptions missing from the set above
+  blindRankingDescription: "Sort countries without seeing their values — pure intuition.",
+  compassQuestDescription: "Point to the target city and see how close your sense of direction really is.",
+  countryDetectiveDescription: "Identify a mystery country from clues revealed one by one.",
+  borderlineDescription: "Guess the two countries from an isolated real border trace.",
+  latitudeLadderDescription: "Drag or tap cities into north-to-south order on the latitude scale.",
+  statBluffDescription: "Spot the fake statistic among a set of real country facts.",
+  dreamCountryDescription: "Answer quick questions about your lifestyle and get the countries that fit you best.",
 };

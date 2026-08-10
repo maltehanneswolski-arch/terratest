@@ -242,4 +242,24 @@ export default {
   // Time units
   seconds: "Sekunden",
   minutes: "Minuten",
+
+  // Startseite
+  homeBadge: "Geografie-Spielesammlung",
+  homeTagline: "Zwölf Spiele, um dein Weltwissen zu testen und zu schärfen. Wähle eines aus und leg los.",
+  homeDailyTag: "Täglich",
+  homeDailyLabel: "Tägliche Herausforderungen",
+  homeDailySub: "Jeden Tag ein neuer Satz — schau morgen wieder vorbei.",
+  homeCasualTag: "Locker",
+  homeCasualLabel: "Jederzeit spielen",
+  homeCasualSub: "Endlose Runden — spiel, wann immer dir danach ist.",
+  homeFooter: "{{count}} Spiele · Kein Konto nötig · Jederzeit spielbar",
+
+  // Fehlende Spielbeschreibungen
+  blindRankingDescription: "Sortiere Länder, ohne ihre Werte zu sehen — reine Intuition.",
+  compassQuestDescription: "Zeige auf die Zielstadt und finde heraus, wie gut dein Richtungssinn wirklich ist.",
+  countryDetectiveDescription: "Errate ein geheimes Land anhand von Hinweisen, die nacheinander erscheinen.",
+  borderlineDescription: "Errate die beiden Länder anhand eines einzelnen echten Grenzverlaufs.",
+  latitudeLadderDescription: "Ziehe oder tippe Städte in die richtige Reihenfolge von Nord nach Süd.",
+  statBluffDescription: "Finde die erfundene Statistik zwischen echten Länderfakten.",
+  dreamCountryDescription: "Beantworte kurze Fragen zu deinem Lebensstil und finde die Länder, die zu dir passen.",
 };

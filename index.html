@@ -5,8 +5,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fff8e7" />
+    <meta name="theme-color" content="#101820" />
     <title>TerraTest - Geography Challenge Games</title>
+    <script>
+      // Apply the theme before first paint. Doing this in React instead would
+      // render one light frame first, so a dark-mode visitor sees a cream flash
+      // on every page load. Dark is the default; an explicit saved choice wins.
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#101820' : '#fff8e7');
+        } catch (e) {
+          // localStorage can throw in private mode; fall back to the dark default.
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <meta name="description" content="Test your geography knowledge with TerraTest! Play PopStack to guess city populations and Up or Down to compare city elevations. Fun, educational geography games with cities from around the world." />
     <meta name="keywords" content="geography games, city population quiz, elevation challenge, world cities, educational games, terra test, terratest" />
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">

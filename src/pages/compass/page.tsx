@@ -712,6 +712,47 @@ const getCountryFactors = (country: CountryData): number[] => [
   country.NBI_R100,
 ].map(clampFactor);
 
+/**
+ * Scores every country against the user's answer profile.
+ *
+ * Extracted so the initial calculation and the two on-results refinements
+ * (continent, priority factors) can never drift apart — previously this block
+ * was duplicated inline and had to be kept in sync by hand.
+ */
+function computeCountryScores(
+  profile: number[],
+  priorityFactorIds: string[],
+  continent: string,
+): CountryScore[] {
+  const scores: CountryScore[] = COUNTRY_DATA.map(country => {
+    const factors = getCountryFactors(country);
+
+    let totalDiff = 0;
+    for (let i = 0; i < 9; i++) {
+      let diff = Math.abs(profile[i] - factors[i]);
+      // Priority factors count double, so mismatches there hurt more.
+      if (priorityFactorIds.includes(FACTOR_IDS[i])) diff *= 2;
+      totalDiff += diff;
+    }
+
+    const avgDiff = totalDiff / 9;
+    let score = Math.max(0, 100 - avgDiff);
+
+    // Countries on the preferred continent get their gap halved.
+    if (continent && getCountryContinent(country.Country) === continent) {
+      score = Math.max(0, 100 - avgDiff / 2);
+    }
+
+    return {
+      country: country.Country,
+      score: Number.isFinite(score) ? Math.min(100, score) : 0,
+      factors,
+    };
+  });
+
+  return scores.sort((a, b) => b.score - a.score);
+}
+
 export default function CompassPage() {
   const { t } = useTranslation();
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -805,38 +846,7 @@ export default function CompassPage() {
     
     setUserProfile(profile);
     
-    const scores: CountryScore[] = COUNTRY_DATA.map(country => {
-      const factors = getCountryFactors(country);
-      
-      let totalDiff = 0;
-      for (let i = 0; i < 9; i++) {
-        let diff = Math.abs(profile[i] - factors[i]);
-        
-        if (priorityFactors.includes(FACTOR_IDS[i])) {
-          diff *= 2;
-        }
-        
-        totalDiff += diff;
-      }
-      
-      const avgDiff = totalDiff / 9;
-      let score = Math.max(0, 100 - avgDiff);
-      
-      const countryContinent = getCountryContinent(country.Country);
-      if (selectedContinent && countryContinent === selectedContinent) {
-        const adjustedDiff = avgDiff / 2;
-        score = Math.max(0, 100 - adjustedDiff);
-      }
-      
-      return {
-        country: country.Country,
-        score: Number.isFinite(score) ? Math.min(100, score) : 0,
-        factors
-      };
-    });
-    
-    scores.sort((a, b) => b.score -a.score);
-    setResults(scores);
+    setResults(computeCountryScores(profile, priorityFactors, selectedContinent));
     // Dream Country is a preference quiz with no score, so only the completion
     // count is meaningful. Recorded here — the other setResults call site is a
     // continent re-filter on the results screen, not a new run.
@@ -998,6 +1008,57 @@ export default function CompassPage() {
             />
           </div>
 
+          {/*
+            Priority factors sit here alongside the continent picker rather than
+            on the first question page. Both are refinements of an existing
+            result, so the player can weigh what matters while actually looking
+            at the countries and see the ranking update immediately.
+          */}
+          <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-1 text-slate-800 dark:text-white">
+              {t('selectFactors')}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+              {t('selectUpTo3Factors')}
+            </p>
+            {/* grid-cols-2 below sm: the German labels are long enough to
+                overflow three columns on a phone. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {factors.map(factor => {
+                const active = priorityFactors.includes(factor.id);
+                const atLimit = priorityFactors.length >= 3 && !active;
+                return (
+                  <button
+                    key={factor.id}
+                    type="button"
+                    aria-pressed={active}
+                    disabled={atLimit}
+                    onClick={() => {
+                      const next = active
+                        ? priorityFactors.filter(f => f !== factor.id)
+                        : priorityFactors.length < 3
+                          ? [...priorityFactors, factor.id]
+                          : priorityFactors;
+                      if (next === priorityFactors) return;
+                      setPriorityFactors(next);
+                      setResults(computeCountryScores(userProfile, next, selectedContinent));
+                    }}
+                    className={`min-h-11 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer transform hover:scale-105 active:scale-95 ${
+                      active
+                        ? 'bg-rose-500 text-white shadow-md border border-rose-600'
+                        : atLimit
+                          ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                    }`}
+                  >
+                    {active && <span className="mr-1">✓</span>}
+                    {t(factor.translationKey)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-white">
               {t('selectContinent')}
@@ -1009,40 +1070,7 @@ export default function CompassPage() {
                   onClick={() => {
                     const newContinent = continent === selectedContinent ? '' : continent;
                     setSelectedContinent(newContinent);
-                    
-                    const profile = userProfile;
-                    const scores: CountryScore[] = COUNTRY_DATA.map(country => {
-                      const factors = getCountryFactors(country);
-                      
-                      let totalDiff = 0;
-                      for (let i = 0; i < 9; i++) {
-                        let diff = Math.abs(profile[i] - factors[i]);
-                        
-                        if (priorityFactors.includes(FACTOR_IDS[i])) {
-                          diff *= 2;
-                        }
-                        
-                        totalDiff += diff;
-                      }
-                      
-                      const avgDiff = totalDiff / 9;
-                      let score = Math.max(0, 100 - avgDiff);
-                      
-                      const countryContinent = getCountryContinent(country.Country);
-                      if (newContinent && countryContinent === newContinent) {
-                        const adjustedDiff = avgDiff / 2;
-                        score = Math.max(0, 100 - adjustedDiff);
-                      }
-                      
-                      return {
-                        country: country.Country,
-                        score: Number.isFinite(score) ? Math.min(100, score) : 0,
-                        factors
-                      };
-                    });
-                    
-                    scores.sort((a, b) => b.score -a.score);
-                    setResults(scores);
+                    setResults(computeCountryScores(userProfile, priorityFactors, newContinent));
                   }}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer transform hover:scale-105 active:scale-95 whitespace-nowrap ${
                     selectedContinent === continent
@@ -1194,32 +1222,6 @@ export default function CompassPage() {
           </button>
         </div>
 
-        {currentStep === 0 && (
-          <div className="mb-8 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-white">
-              {t('selectFactors')}
-            </h2>
-            <div className="grid grid-cols-3 gap-3">
-              {factors.map(factor => (
-                <button
-                  key={factor.id}
-                  onClick={() => handlePriorityToggle(factor.id)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer transform hover:scale-105 active:scale-95 whitespace-nowrap ${
-                    priorityFactors.includes(factor.id)
-                      ? 'bg-rose-500 text-white shadow-md border border-rose-600'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  {priorityFactors.includes(factor.id) && <span className="mr-1">✓</span>}
-                  {t(factor.translationKey)}
-                </button>
-              ))}
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-              {t('selectUpTo3Factors')}
-            </p>
-          </div>
-        )}
 
         <div className="mb-6">
           <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400 mb-2">

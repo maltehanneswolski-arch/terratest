@@ -3,21 +3,26 @@ import { useState, useEffect } from 'react';
 
 export const AnimatedThemeToggle = ({ className }: { className?: string }) => {
   const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') || 'light';
-    }
-    return 'light';
+    if (typeof window === 'undefined') return 'dark';
+    const saved = localStorage.getItem('theme');
+    // Dark is the default; only an explicit saved choice overrides it. The
+    // matching pre-paint script in index.html keeps the first frame in sync.
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
   });
 
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    document.documentElement.classList.toggle('dark', isDark);
+    // Keep the browser chrome colour matching the theme.
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', isDark ? '#101820' : '#fff8e7');
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // Private mode / storage disabled — the theme still applies for this visit.
     }
-    localStorage.setItem('theme', theme);
   }, [theme, isDark]);
 
   return (
