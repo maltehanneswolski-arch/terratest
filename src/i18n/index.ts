@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import resources from './local';
+import { setMaskLanguage } from './uiMask';
 
 const SUPPORTED = ['en', 'de'] as const;
 type Supported = (typeof SUPPORTED)[number];
@@ -46,6 +47,10 @@ i18n.use(initReactI18next).init({
 function applyLanguage(language: string) {
   const lang = (SUPPORTED as readonly string[]).includes(language) ? language : 'en';
   document.documentElement.setAttribute('lang', lang);
+
+  // Covers the copy still hardcoded in the game pages. Safe to call on every
+  // change: passing 'en' restores the original text.
+  setMaskLanguage(lang);
   try {
     localStorage.setItem('language', lang);
   } catch {
