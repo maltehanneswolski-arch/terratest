@@ -490,19 +490,42 @@ export default function BorderDominoPage() {
     return dfs(startCountryName, new Set([startCountryName]), 1);
   };
 
+  /**
+   * Best chain we can find from a start country, under a search budget.
+   *
+   * Finding the genuinely longest simple path is NP-hard, and this ran an
+   * exhaustive DFS with no depth limit and no budget. On a sparse rule that
+   * finishes instantly, which is why it went unnoticed — but the graph is dense
+   * in Europe and Africa, and on the wrong rule/start combination the number of
+   * simple paths explodes and the tab freezes outright.
+   *
+   * The budget below makes the search always terminate. It returns the best
+   * chain found rather than a guaranteed optimum, which is the right trade for
+   * a "best possible today" hint: an occasionally conservative number beats a
+   * page that never loads.
+   */
+  const MAX_SEARCH_VISITS = 150_000;
+  const MAX_SEARCH_DEPTH = 15;
+
   const calculateOptimalChainForRule = (startCountry: Country, rule: RuleKey): Country[] => {
-    const dfs = (countryName: string, visited: Set<string>): Country[] => {
+    let visits = 0;
+
+    const dfs = (countryName: string, visited: Set<string>, depth: number): Country[] => {
       const country = COUNTRIES[countryName];
       if (!country) return [];
+
+      visits += 1;
+      if (visits > MAX_SEARCH_VISITS || depth >= MAX_SEARCH_DEPTH) return [country];
 
       const options = getRuleNeighbors(countryName, rule, visited);
       if (options.length === 0) return [country];
 
       let best = [country];
       for (const next of options) {
+        if (visits > MAX_SEARCH_VISITS) break;
         const newVisited = new Set(visited);
         newVisited.add(next.name);
-        const candidate = [country, ...dfs(next.name, newVisited)];
+        const candidate = [country, ...dfs(next.name, newVisited, depth + 1)];
         if (candidate.length > best.length) {
           best = candidate;
         }
@@ -511,7 +534,7 @@ export default function BorderDominoPage() {
       return best;
     };
 
-    return dfs(startCountry.name, new Set([startCountry.name]));
+    return dfs(startCountry.name, new Set([startCountry.name]), 0);
   };
 
   /**
