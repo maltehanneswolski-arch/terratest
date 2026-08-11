@@ -257,4 +257,23 @@ export default {
   latitudeLadderDescription: "Ziehe oder tippe Städte in die richtige Reihenfolge von Nord nach Süd.",
   statBluffDescription: "Finde die erfundene Statistik unter echten Länderfakten.",
   dreamCountryDescription: "Beantworte kurze Fragen zu deinem Lebensstil und finde die Länder, die zu dir passen.",
+
+  // Gemeinsame Oberfläche (Statistikleiste, Teilen-Buttons, Regel-Dialog)
+  statsAriaLabel: "Deine Statistik in diesem Browser",
+  statsPlayed: "Gespielt",
+  statsStreak: "Serie",
+  statsBestStreak: "Beste Serie",
+  statsBest: "Bester Wert",
+  statsAverage: "Durchschnitt",
+  statsReset: "Zurücksetzen",
+  statsResetConfirm: "Gespeicherte Statistik für dieses Spiel zurücksetzen? Das kann nicht rückgängig gemacht werden.",
+  shareResultOnly: "Ergebnis teilen",
+  shareWithDetails: "Mit Details teilen",
+  shareCopied: "Kopiert!",
+  shareFailed: "Kopieren fehlgeschlagen",
+  rulesScoring: "Punktevergabe",
+  rulesTip: "Tipp",
+  rulesLetsPlay: "Los geht's!",
+  rulesClose: "Schließen",
+  navGames: "Spiele",
 };

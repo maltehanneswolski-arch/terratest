@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatedThemeToggle } from '@/components/ui/animated-theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { cn } from '@/lib/utils';
@@ -82,6 +83,7 @@ function NavItem({
 }
 
 export function GameNavbar({ currentPath }: { currentPath: string }) {
+  const { t } = useTranslation();
   return (
     <div className="sticky top-0 z-40 border-b border-[#101820]/8 bg-[#fff8e7]/90 backdrop-blur-md dark:border-[#fff8e7]/6 dark:bg-[#101820]/90">
       <div className="mx-auto px-4 py-3">
@@ -100,7 +102,7 @@ export function GameNavbar({ currentPath }: { currentPath: string }) {
           */}
           <div className="flex min-w-0 flex-1 items-center md:justify-center md:overflow-visible">
             <nav
-              aria-label="Games"
+              aria-label={t('navGames')}
               className="bauhaus-scrollbar -mb-[11px] flex w-full items-center gap-1 overflow-x-auto pb-[11px] md:w-auto md:overflow-x-visible"
             >
               {NAV_ITEMS.map((item, index) => {

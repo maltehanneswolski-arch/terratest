@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { shareResult, type ShareDetails, type ShareMode } from '@/lib/shareResult';
 
 interface ShareButtonsProps {
@@ -19,6 +20,7 @@ interface ShareButtonsProps {
  * rather than the default.
  */
 export function ShareButtons({ share, className = '', buttonClassName }: ShareButtonsProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState<ShareMode | 'failed' | null>(null);
 
   const base =
@@ -34,8 +36,8 @@ export function ShareButtons({ share, className = '', buttonClassName }: ShareBu
   };
 
   const label = (mode: ShareMode, text: string) => {
-    if (copied === mode) return 'Copied!';
-    if (copied === 'failed') return 'Copy failed';
+    if (copied === mode) return t('shareCopied');
+    if (copied === 'failed') return t('shareFailed');
     return text;
   };
 
@@ -43,11 +45,11 @@ export function ShareButtons({ share, className = '', buttonClassName }: ShareBu
     <div className={`flex flex-wrap gap-2 ${className}`}>
       <button type="button" onClick={() => handle('summary')} className={base}>
         <i className={`${copied === 'summary' ? 'ri-check-line' : 'ri-share-line'} mr-1.5`} aria-hidden="true" />
-        {label('summary', 'Share result')}
+        {label('summary', t('shareResultOnly'))}
       </button>
       <button type="button" onClick={() => handle('detailed')} className={base}>
         <i className={`${copied === 'detailed' ? 'ri-check-line' : 'ri-list-check'} mr-1.5`} aria-hidden="true" />
-        {label('detailed', 'Share with details')}
+        {label('detailed', t('shareWithDetails'))}
       </button>
     </div>
   );

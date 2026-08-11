@@ -257,4 +257,23 @@ export default {
   latitudeLadderDescription: "Drag or tap cities into north-to-south order on the latitude scale.",
   statBluffDescription: "Spot the fake statistic among a set of real country facts.",
   dreamCountryDescription: "Answer quick questions about your lifestyle and get the countries that fit you best.",
+
+  // Shared UI chrome (stats bar, share buttons, rules modal)
+  statsAriaLabel: "Your statistics on this browser",
+  statsPlayed: "Played",
+  statsStreak: "Streak",
+  statsBestStreak: "Best streak",
+  statsBest: "Best",
+  statsAverage: "Average",
+  statsReset: "Reset",
+  statsResetConfirm: "Reset your saved stats for this game? This cannot be undone.",
+  shareResultOnly: "Share result",
+  shareWithDetails: "Share with details",
+  shareCopied: "Copied!",
+  shareFailed: "Copy failed",
+  rulesScoring: "Scoring",
+  rulesTip: "Tip",
+  rulesLetsPlay: "Let's play!",
+  rulesClose: "Close",
+  navGames: "Games",
 };

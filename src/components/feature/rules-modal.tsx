@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type ScoreRow = {
   pts: string;
@@ -91,9 +92,10 @@ export function RulesModal({
   rules = [],
   scoring = [],
   tip,
-  ctaLabel = "Let's play!",
+  ctaLabel,
   accent,
 }: RulesModalProps) {
+  const { t } = useTranslation();
   const accentStyle = accent ? ACCENT_MAP[accent] : DEFAULT_ACCENT;
 
   useEffect(() => {
@@ -124,7 +126,8 @@ export function RulesModal({
             onClick={onClose}
             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
           >
-            <i className="ri-close-line text-lg"></i>
+            <span className="sr-only">{t('rulesClose')}</span>
+            <i className="ri-close-line text-lg" aria-hidden="true"></i>
           </button>
         </div>
 
@@ -144,7 +147,7 @@ export function RulesModal({
           {/* Scoring */}
           {scoring.length > 0 && (
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2.5">Scoring</div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2.5">{t('rulesScoring')}</div>
               <div className="grid grid-cols-2 gap-2">
                 {scoring.map((row, i) => {
                   const c = COLOR_MAP[row.color];
@@ -165,7 +168,7 @@ export function RulesModal({
           {/* Tip */}
           {tip && (
             <div className={`rounded-2xl px-4 py-3 text-sm ${accentStyle.tipBg} ${accentStyle.tipBorder ? `border ${accentStyle.tipBorder}` : ''} ${accentStyle.tipLabel}`}>
-              <span className="font-semibold">💡 Tip: </span>{tip}
+              <span className="font-semibold">💡 {t('rulesTip')}: </span>{tip}
             </div>
           )}
 
@@ -182,7 +185,7 @@ export function RulesModal({
             onClick={onClose}
             className="w-full rounded-2xl bg-[#101820] px-5 py-3 font-semibold text-[#fff8e7] shadow-lg transition hover:scale-[1.02] cursor-pointer whitespace-nowrap dark:bg-[#fff8e7] dark:text-[#101820]"
           >
-            {ctaLabel}
+            {ctaLabel ?? t('rulesLetsPlay')}
           </button>
         </div>
       </div>
