@@ -60,9 +60,8 @@ function roundSharePayload(results: RoundResult[], totalScore: number, metricLab
   const tiles = results.map((r) => gradeSquare((r.points / 3) * 100)).join('');
   return {
     game: 'Blind Ranking',
-    result: scoreLine(totalScore, PER_ROUND_MAX),
+    result: `${publicMetricLabel(metricLabel)} — ${scoreLine(totalScore, PER_ROUND_MAX)}`,
     details: [
-      `📊 ${publicMetricLabel(metricLabel)}`,
       tiles,
       '',
       ...results.map((r) => `${gradeSquare((r.points / 3) * 100)} ${r.entry.country} — guessed #${r.guessedPosition + 1}, actual #${r.actualPosition + 1}`),

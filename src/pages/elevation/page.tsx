@@ -319,6 +319,7 @@ export default function ElevationPage() {
   const statsLoadedRef = useRef(false);
   const { record: recordRun } = useGameStats('elevation');
   const runIdRef = useRef(0);
+  const [failedPair, setFailedPair] = useState<{ picked: string; other: string } | null>(null);
 
   // Load stats from localStorage on component mount
   useEffect(() => {
@@ -446,6 +447,8 @@ export default function ElevationPage() {
         setShowElevation(false);
       }, 1200);
     } else {
+      // Remember which matchup ended the run, so the share text can name it.
+      setFailedPair({ picked: city.name, other: other.name });
       // Shared per-browser stats: the streak reached is this run's score.
       recordRun({ score: streak }, `run-${runIdRef.current}`);
       runIdRef.current += 1;
@@ -479,7 +482,9 @@ export default function ElevationPage() {
 
   const sharePayload = {
     game: 'Elevation',
-    result: `best streak ${gameStats.bestStreak} ${streakEmoji(gameStats.bestStreak)}`,
+    result: `best streak ${gameStats.bestStreak} ${streakEmoji(gameStats.bestStreak)}${
+      failedPair ? ` — I failed at ${failedPair.picked} vs ${failedPair.other}` : ''
+    }`,
     details: [
       `${percentLine(shareAccuracy)}`,
       `🎮 Games played: ${gameStats.totalGames}`,

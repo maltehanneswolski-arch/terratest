@@ -3,6 +3,8 @@ import { GameNavbar } from '@/components/ui/game-navbar';
 import { LatitudeLadderCity, loadLatitudeLadderCities } from './data';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { ShareButtons } from '@/components/feature/share-buttons';
+import { scoreLine, gradeSquare } from '@/lib/shareResult';
 import { useGameStats } from '@/lib/gameStats';
 
 const ROUND_SIZE = 5;
@@ -494,6 +496,24 @@ export default function LatitudeLadderPage() {
             </div>
 
             <GameStatsBar gameId="latitude-ladder" showStreak={false} className="mt-3" />
+
+            {submitted && (
+              <ShareButtons
+                className="mt-3"
+                share={{
+                  game: 'Latitude Ladder',
+                  result: scoreLine(finalScore, MAX_SCORE),
+                  details: [
+                    perfectBonus > 0 && '🎯 Perfect ladder bonus +3',
+                    '',
+                    ...results.map((r) =>
+                      `${gradeSquare((r.points / 3) * 100)} ${r.city.city} — slot ${r.guessedIndex + 1} (actual ${r.actualIndex + 1})`,
+                    ),
+                  ],
+                  path: '/latitude-ladder',
+                }}
+              />
+            )}
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1fr_280px]">

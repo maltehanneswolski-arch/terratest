@@ -322,7 +322,7 @@ function FinalResultScreen({
 
   const sharePayload = {
     game: 'Blind Ranking',
-    result: scoreLine(total, maxTotal),
+    result: `${publicMetricLabel(rounds[0].metric.label)} — ${scoreLine(total, maxTotal)}`,
     details: [
       ...roundResults.map((results, i) => {
         const tiles = results.map((r) => gradeSquare((r.points / 3) * 100)).join('');

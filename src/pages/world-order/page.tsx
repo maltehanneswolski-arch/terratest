@@ -343,7 +343,7 @@ export default function WorldOrderPage() {
   const shareMaxPoints = Math.max(questions.length, 1) * 40;
   const sharePayload = {
     game: 'World Order',
-    result: scoreLine(totalScore, shareMaxPoints),
+    result: `${getMetric(questions[0]?.metricId ?? '')?.shortLabel ?? 'Daily round'} — ${scoreLine(totalScore, shareMaxPoints)}`,
     details: roundResults.flatMap((round, index) => {
       const metric = getMetric(round.question.metricId);
       const ordered = round.results

@@ -184,10 +184,12 @@ export default function DailyQuizPage() {
 
   const sharePayload = {
     game: 'Capital Clash',
-    result: `a streak of ${streak} ${streakEmoji(streak)}`,
+    result: `a streak of ${streak} ${streakEmoji(streak)}${
+      currentCountry ? ` — I failed at ${currentCountry.country}` : ''
+    }`,
     details: [
       `🏛️ Capitals named in a row: ${streak}`,
-      currentCountry && `❌ Fell on: ${currentCountry.country} (${currentCountry.capital})`,
+      currentCountry && `❌ The answer was ${currentCountry.capital}`,
     ],
     path: '/daily-quiz',
   };

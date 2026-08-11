@@ -622,11 +622,10 @@ export default function BorderDominoPage() {
   const shareBest = Math.max(optimalChain.length - 1, 0);
   const sharePayload = {
     game: 'Border Domino',
-    result: shareBest > 0
-      ? `${scoreLine(score, shareBest)} borders crossed`
-      : `${score} borders crossed`,
+    result: `${RULE_CONFIG[ruleKey].label} — ${
+      shareBest > 0 ? scoreLine(score, shareBest) : String(score)
+    } borders crossed`,
     details: [
-      `📜 Rule: ${RULE_CONFIG[ruleKey].label}`,
       chain.length > 0 && `🚩 Start: ${chain[0].flag} ${chain[0].name}`,
       '',
       chain.map((c) => `${c.flag} ${c.name}`).join(' → '),

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
+import { ShareButtons } from '@/components/feature/share-buttons';
+import { gradeEmoji } from '@/lib/shareResult';
 import { useGameStats } from '@/lib/gameStats';
 
 interface CountryData {
@@ -1004,6 +1006,28 @@ export default function CompassPage() {
               showScore={false}
               className="mt-4 max-w-xs"
             />
+
+            {results.length > 0 && (
+              <ShareButtons
+                className="mt-3 max-w-md"
+                share={{
+                  game: 'Dream Country',
+                  result: `${results[0].country} — ${results[0].score.toFixed(1)}% match ${gradeEmoji(results[0].score)}`,
+                  details: [
+                    selectedContinent && `🌍 Filtered to ${selectedContinent}`,
+                    priorityFactors.length > 0 &&
+                      `⭐ Priorities: ${priorityFactors
+                        .map((id) => t(factors.find((f) => f.id === id)?.translationKey ?? id))
+                        .join(', ')}`,
+                    '',
+                    ...results.slice(0, 5).map((r, i) =>
+                      `${['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} ${r.country} — ${r.score.toFixed(1)}%`,
+                    ),
+                  ],
+                  path: '/compass',
+                }}
+              />
+            )}
           </div>
 
           {/*

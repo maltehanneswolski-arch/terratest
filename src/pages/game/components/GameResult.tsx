@@ -47,7 +47,7 @@ export function GameResult({ result, targetNumber, onNewGame }: GameResultProps)
 
   const sharePayload = {
     game: 'PopStack',
-    result: percentLine(parseFloat(accuracyPercentage)),
+    result: `${percentLine(parseFloat(accuracyPercentage))}`,
     details: [
       `Target: ${formatNumber(targetNumber)}`,
       `My total: ${formatNumber(result.total)} (${result.difference > 0 ? '+' : ''}${formatNumber(result.difference)})`,
