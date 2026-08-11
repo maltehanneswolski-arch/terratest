@@ -125,7 +125,8 @@ const getPositionLabel = (position: GuessPosition) => {
 };
 
 const getResultEmoji = (points: number) => {
-  if (points === 10) return '🟣';
+  // Matches the colour scale above: green best, red worst.
+  if (points === 10) return '🟩';
   if (points >= 6) return '🟢';
   if (points >= 5) return '🟡';
   if (points >= 4) return '🟠';
@@ -151,14 +152,20 @@ const createDailyQuestions = (): Question[] => {
   });
 };
 
+/**
+ * Colour runs green (best) through red (worst), so the scale reads the way
+ * players expect. It previously peaked at purple for "Perfect" with green only
+ * second — which made a top result look like a different category rather than
+ * the best one, and left red doing double duty.
+ */
 const calculateScore = (guessedRank: number, actualRank: number, isCorrectOrientation: boolean) => {
-  if (!isCorrectOrientation) return { points: 0, color: 'bg-red-500', label: 'Wrong direction' };
+  if (!isCorrectOrientation) return { points: 0, color: 'bg-red-600', label: 'Wrong direction' };
 
   const distance = Math.abs(guessedRank - actualRank);
-  if (distance <= 2) return { points: 10, color: 'bg-purple-500', label: 'Perfect' };
+  if (distance <= 2) return { points: 10, color: 'bg-emerald-600', label: 'Perfect' };
   if (distance <= 10) return { points: 6, color: 'bg-green-500', label: 'Excellent' };
   if (distance <= 20) return { points: 5, color: 'bg-lime-500', label: 'Great' };
-  if (distance <= 40) return { points: 4, color: 'bg-yellow-500', label: 'Good' };
+  if (distance <= 40) return { points: 4, color: 'bg-amber-500', label: 'Good' };
   return { points: 3, color: 'bg-orange-500', label: 'Right side' };
 };
 
@@ -467,10 +474,10 @@ export default function WorldOrderPage() {
                 // on the inner div it does nothing for reconciliation.
                 <Fragment key={`${result.position}-${result.guess}`}>
                   <div className={`${result.color} text-white px-4 py-3 rounded-lg`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="font-semibold">{getPositionLabel(result.position)} · {result.guess}</div>
-                        <div className="text-xs opacity-90">Rank #{result.guessedRank} · {result.displayValue}</div>
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold break-words">{getPositionLabel(result.position)} · {result.guess}</div>
+                        <div className="text-xs opacity-90 break-words">Rank #{result.guessedRank} · {result.displayValue}</div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold">+{result.points}</div>
@@ -480,13 +487,13 @@ export default function WorldOrderPage() {
                   </div>
                   {index === 1 && (
                     <div className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/40 dark:to-violet-900/40 border-2 border-purple-300 dark:border-purple-600 px-4 py-3 rounded-lg">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="font-bold text-slate-800 dark:text-white">
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-800 dark:text-white break-words">
                             {roundCenter.country}
                             <span className="ml-2 text-xs font-normal text-purple-600 dark:text-purple-400">(center)</span>
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-slate-300">Rank #{roundCenter.rank} · {roundCenter.displayValue}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300 break-words">Rank #{roundCenter.rank} · {roundCenter.displayValue}</div>
                         </div>
                       </div>
                     </div>

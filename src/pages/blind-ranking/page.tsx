@@ -584,7 +584,6 @@ export default function BlindRankingPage() {
           actualOrder={round.actualOrder}
           onRetry={resetAll}
           onNext={handleNextRound}
-          roundInfo={{ current: currentRoundIdx + 1, total: TOTAL_ROUNDS }}
         />
       )}
 
@@ -622,26 +621,6 @@ export default function BlindRankingPage() {
           </button>
         </div>
 
-        {/* Round indicator */}
-        <div className="mb-6 flex items-center gap-3 max-w-md mx-auto">
-          {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-              <div
-                className={`h-2 w-full rounded-full transition-all duration-500 ${
-                  i < currentRoundIdx
-                    ? 'bg-yellow-500'
-                    : i === currentRoundIdx
-                    ? 'bg-yellow-400'
-                    : 'bg-slate-200 dark:bg-slate-700'
-                }`}
-              ></div>
-              <span className={`text-xs font-semibold ${i === currentRoundIdx ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-400 dark:text-slate-600'}`}>
-                Round {i + 1}
-              </span>
-            </div>
-          ))}
-        </div>
-
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             {/* ─── Left: ranking board ─── */}
@@ -650,7 +629,7 @@ export default function BlindRankingPage() {
               <div className="rounded-3xl bg-gradient-to-r from-yellow-400 to-amber-500 p-5 text-white">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-100">Round {currentRoundIdx + 1} of {TOTAL_ROUNDS}</div>
+                    <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-100">Today's ranking</div>
                     <h2 className="mt-1 text-2xl font-bold">{publicMetricLabel(round.metric.label)}</h2>
                     <p className="mt-1 text-sm text-amber-50/90">
                       {round.metric.description || 'Place the countries from highest to lowest value.'}

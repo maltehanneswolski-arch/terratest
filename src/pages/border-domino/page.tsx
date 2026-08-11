@@ -507,15 +507,29 @@ export default function BorderDominoPage() {
   const MAX_SEARCH_VISITS = 150_000;
   const MAX_SEARCH_DEPTH = 15;
 
-  const calculateOptimalChainForRule = (startCountry: Country, rule: RuleKey): Country[] => {
+  /**
+   * True when the last search hit its budget, so the chain returned is a lower
+   * bound rather than the true optimum. The UI shows "10+" in that case instead
+   * of an exact number it cannot stand behind.
+   */
+  const [optimalIsLowerBound, setOptimalIsLowerBound] = useState(false);
+
+  const calculateOptimalChainForRule = (
+    startCountry: Country,
+    rule: RuleKey,
+  ): { chain: Country[]; truncated: boolean } => {
     let visits = 0;
+    let truncated = false;
 
     const dfs = (countryName: string, visited: Set<string>, depth: number): Country[] => {
       const country = COUNTRIES[countryName];
       if (!country) return [];
 
       visits += 1;
-      if (visits > MAX_SEARCH_VISITS || depth >= MAX_SEARCH_DEPTH) return [country];
+      if (visits > MAX_SEARCH_VISITS || depth >= MAX_SEARCH_DEPTH) {
+        truncated = true;
+        return [country];
+      }
 
       const options = getRuleNeighbors(countryName, rule, visited);
       if (options.length === 0) return [country];
@@ -534,7 +548,8 @@ export default function BorderDominoPage() {
       return best;
     };
 
-    return dfs(startCountry.name, new Set([startCountry.name]), 0);
+    const chain = dfs(startCountry.name, new Set([startCountry.name]), 0);
+    return { chain, truncated };
   };
 
   /**
@@ -582,8 +597,9 @@ export default function BorderDominoPage() {
 
     // Compute the optimal chain lazily so the UI renders first
     setTimeout(() => {
-      const optimal = calculateOptimalChainForRule(startCountry, rule);
+      const { chain: optimal, truncated } = calculateOptimalChainForRule(startCountry, rule);
       setOptimalChain(optimal);
+      setOptimalIsLowerBound(truncated);
       setOptimalChainLoading(false);
     }, 0);
   };
@@ -646,7 +662,9 @@ export default function BorderDominoPage() {
   const sharePayload = {
     game: 'Border Domino',
     result: `${RULE_CONFIG[ruleKey].label} — ${
-      shareBest > 0 ? scoreLine(score, shareBest) : String(score)
+      shareBest > 0
+        ? `${scoreLine(score, shareBest)}${optimalIsLowerBound ? '+' : ''}`
+        : String(score)
     } borders crossed`,
     details: [
       chain.length > 0 && `🚩 Start: ${chain[0].flag} ${chain[0].name}`,
@@ -661,6 +679,12 @@ export default function BorderDominoPage() {
   const availableMoves = currentCountry ? getRuleNeighbors(currentCountry.name, ruleKey, usedCountries) : [];
   const allCountryNames = Object.keys(COUNTRIES).sort((a, b) => a.localeCompare(b));
   const maxChainLength = optimalChainLoading ? null : Math.max(optimalChain.length - 1, 0);
+  /**
+   * When the search hit its budget the number is a floor, not the optimum, so
+   * show it as "10+" rather than claiming an exact best.
+   */
+  const maxChainDisplay =
+    maxChainLength === null ? null : `${maxChainLength}${optimalIsLowerBound ? '+' : ''}`;
 
   return (
     <div className="app-page-shell min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
@@ -729,9 +753,13 @@ export default function BorderDominoPage() {
                   {optimalChainLoading ? (
                     <div className="text-slate-400 animate-pulse text-lg font-medium">Calculating…</div>
                   ) : (
-                    <div className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">{maxChainLength}</div>
+                    <div className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">{maxChainDisplay}</div>
                   )}
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Best possible score from the same start country under today&apos;s restriction.</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {optimalIsLowerBound
+                      ? "At least this many steps are possible from the same start country under today's restriction — the full search is too large to finish exactly."
+                      : "Best possible score from the same start country under today's restriction."}
+                  </p>
                 </div>
               </div>
 

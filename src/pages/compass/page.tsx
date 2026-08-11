@@ -1152,11 +1152,14 @@ export default function CompassPage() {
                       }`}
                       onClick={() => handleCountryToggle(item.country)}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-slate-600 dark:text-slate-400 w-8">
+                      <div className="flex min-w-0 items-center gap-3">
+                        {/* w-8 was too narrow for three-digit ranks (#195), so the
+                            number spilled underneath the flag. Size to content with
+                            a floor, and keep the digits from reflowing. */}
+                        <span className="shrink-0 min-w-[3.25rem] text-right text-lg font-bold tabular-nums text-slate-600 dark:text-slate-400">
                           #{index + 1}
                         </span>
-                        <div className="w-8 h-6 flex items-center justify-center overflow-hidden rounded shadow-sm bg-white/40 dark:bg-slate-900/40">
+                        <div className="w-8 h-6 shrink-0 flex items-center justify-center overflow-hidden rounded shadow-sm bg-white/40 dark:bg-slate-900/40">
                           {countryCode && (
                             <img 
                               src={`https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`}

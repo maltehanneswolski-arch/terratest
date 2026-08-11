@@ -421,7 +421,9 @@ export default function CompassQuestPage() {
                         );
                       })}
                     </div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+                    {/* Scales down rather than wrapping: a second line pushes the
+                        heading readout out of alignment and breaks the row. */}
+                    <h2 className="whitespace-nowrap overflow-hidden text-ellipsis font-bold text-slate-800 dark:text-white text-[clamp(0.8rem,2.6vw,1.25rem)]">
                       From {currentRound.reference.capitalName}, where is {currentRound.target.capitalName}?
                     </h2>
                   </div>

@@ -10,7 +10,7 @@ import { COUNTRY_METADATA } from '@/pages/game/data/countryMetadata';
 import { getFlagUrl } from '@/lib/countryFlags';
 import { BORDERLINE_BORDERS, BorderlineEntry } from './border-data';
 
-const MAX_TRIES = 4;
+const MAX_TRIES = 3;
 // One border per day, seeded from the Europe/Brussels date like every other
 // daily challenge: everyone gets the same trace, and it rotates at midnight.
 const TOTAL_ROUNDS = 1;
@@ -431,6 +431,8 @@ interface CountrySelectCardProps {
   setOpenField: (field: FieldKey | null) => void;
   excludeCountry?: string | null;
   disabled?: boolean;
+  /** Confirmed correct: kept between tries and not clearable. */
+  locked?: boolean;
 }
 
 function CountrySelectCard({
@@ -445,6 +447,7 @@ function CountrySelectCard({
   setOpenField,
   excludeCountry,
   disabled,
+  locked,
 }: CountrySelectCardProps) {
   const suggestions = useMemo(() => getFilteredCountries(search, excludeCountry), [search, excludeCountry]);
   const isOpen = openField === field && !disabled;
@@ -454,9 +457,23 @@ function CountrySelectCard({
       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{label}</label>
       <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/40 p-3">
         {selectedCountry ? (
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-white dark:bg-slate-800 border border-violet-200 dark:border-violet-700 px-3 py-2">
-            <CountryBadge country={selectedCountry} size="sm" />
-            {!disabled ? (
+          <div
+            className={`flex items-center justify-between gap-3 rounded-xl bg-white dark:bg-slate-800 border px-3 py-2 ${
+              locked
+                ? 'border-emerald-400 dark:border-emerald-500 ring-1 ring-emerald-400/40'
+                : 'border-violet-200 dark:border-violet-700'
+            }`}
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <CountryBadge country={selectedCountry} size="sm" />
+              {locked ? (
+                <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <i className="ri-lock-line mr-1" aria-hidden="true" />
+                  Locked in
+                </span>
+              ) : null}
+            </div>
+            {!disabled && !locked ? (
               <button
                 type="button"
                 onClick={onClearCountry}
@@ -528,6 +545,8 @@ export default function BorderlinePage() {
   const [selectedFirst, setSelectedFirst] = useState<string | null>(null);
   const [selectedSecond, setSelectedSecond] = useState<string | null>(null);
   const [openField, setOpenField] = useState<FieldKey | null>(null);
+  /** A field holding a confirmed-correct country, kept between tries. */
+  const [lockedField, setLockedField] = useState<FieldKey | null>(null);
   const [attempts, setAttempts] = useState<AttemptEntry[]>([]);
   const [hintCount, setHintCount] = useState(0);
   const [revealedCountry, setRevealedCountry] = useState<string | null>(null);
@@ -550,6 +569,7 @@ export default function BorderlinePage() {
     setSelectedFirst(null);
     setSelectedSecond(null);
     setOpenField(null);
+    setLockedField(null);
     setAttempts([]);
     setHintCount(0);
     setRevealedCountry(null);
@@ -623,10 +643,20 @@ export default function BorderlinePage() {
     const matched = setsMatch(selectedFirst, selectedSecond, currentBorder.countryA, currentBorder.countryB);
     const nextAttempts = [...attempts, { first: selectedFirst, second: selectedSecond, matched }];
     setAttempts(nextAttempts);
+
+    // If exactly one of the two guesses is part of the real border, keep it:
+    // it is confirmed, so making the player re-enter it each try is only busywork.
+    const targets = [currentBorder.countryA, currentBorder.countryB];
+    const firstIsRight = targets.includes(selectedFirst);
+    const secondIsRight = targets.includes(selectedSecond);
+    const lockFirst = !matched && firstIsRight && !secondIsRight;
+    const lockSecond = !matched && secondIsRight && !firstIsRight;
+
     setFirstSearch('');
     setSecondSearch('');
-    setSelectedFirst(null);
-    setSelectedSecond(null);
+    setSelectedFirst(lockFirst ? selectedFirst : null);
+    setSelectedSecond(lockSecond ? selectedSecond : null);
+    setLockedField(lockFirst ? 'first' : lockSecond ? 'second' : null);
     setOpenField(null);
 
     if (matched) {
@@ -639,6 +669,8 @@ export default function BorderlinePage() {
       });
       return;
     }
+
+    const lockedCountry = lockFirst ? selectedFirst : lockSecond ? selectedSecond : null;
 
     const wrongAttempts = nextAttempts.length;
     if (wrongAttempts >= MAX_TRIES) {
@@ -653,7 +685,9 @@ export default function BorderlinePage() {
     if (wrongAttempts === 1) {
       setHintCount(1);
       setFeedback({
-        text: `Not quite. You have ${MAX_TRIES - wrongAttempts} tries left, and your first hint is now unlocked.`,
+        text: lockedCountry
+          ? `${lockedCountry} is correct and stays locked in. ${MAX_TRIES - wrongAttempts} tries left, and your first hint is unlocked.`
+          : `Not quite. You have ${MAX_TRIES - wrongAttempts} tries left, and your first hint is now unlocked.`,
         tone: 'error',
       });
       return;
@@ -662,7 +696,9 @@ export default function BorderlinePage() {
     if (wrongAttempts === 2) {
       setHintCount(2);
       setFeedback({
-        text: `Still not it. You have ${MAX_TRIES - wrongAttempts} tries left, and one more hint just appeared.`,
+        text: lockedCountry
+          ? `${lockedCountry} is correct and stays locked in. ${MAX_TRIES - wrongAttempts} tries left, and another hint just appeared.`
+          : `Still not it. You have ${MAX_TRIES - wrongAttempts} tries left, and one more hint just appeared.`,
         tone: 'error',
       });
       return;
@@ -690,6 +726,7 @@ export default function BorderlinePage() {
     setSelectedFirst(null);
     setSelectedSecond(null);
     setOpenField(null);
+    setLockedField(null);
     setAttempts([]);
     setHintCount(0);
     setRevealedCountry(null);
@@ -783,6 +820,7 @@ export default function BorderlinePage() {
                     search={firstSearch}
                     setSearch={setFirstSearch}
                     selectedCountry={selectedFirst}
+                    locked={lockedField === 'first'}
                     onSelectCountry={(country) => {
                       setSelectedFirst(country);
                       setFirstSearch('');
@@ -802,6 +840,7 @@ export default function BorderlinePage() {
                     search={secondSearch}
                     setSearch={setSecondSearch}
                     selectedCountry={selectedSecond}
+                    locked={lockedField === 'second'}
                     onSelectCountry={(country) => {
                       setSelectedSecond(country);
                       setSecondSearch('');

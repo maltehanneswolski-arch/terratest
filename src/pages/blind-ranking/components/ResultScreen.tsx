@@ -80,18 +80,8 @@ export function ResultScreen({ results, totalScore, perfectBonus, metric, actual
 
         {/* Header */}
         <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-7 py-7 text-white">
-          {roundInfo && (
-            <div className="mb-2 flex items-center gap-2">
-              {Array.from({ length: roundInfo.total }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-2 flex-1 rounded-full ${i < roundInfo.current ? 'bg-white' : 'bg-white/30'}`}
-                ></div>
-              ))}
-            </div>
-          )}
           <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-100">
-            {roundInfo ? `Round ${roundInfo.current} of ${roundInfo.total}` : "Today's result"}
+            Today's result
           </div>
           <h2 className="mt-1 text-2xl font-bold">{publicMetricLabel(metric.label)}</h2>
           <div className="mt-5 flex items-end gap-5">
