@@ -20,10 +20,12 @@ interface GameResultProps {
   result: GameResult;
   targetNumber: number;
   onNewGame: () => void;
+  /** The day's restriction label, e.g. "South America only" — named in the share headline. */
+  restrictionLabel?: string;
 }
 
 
-export function GameResult({ result, targetNumber, onNewGame }: GameResultProps) {
+export function GameResult({ result, targetNumber, onNewGame, restrictionLabel }: GameResultProps) {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
@@ -47,7 +49,9 @@ export function GameResult({ result, targetNumber, onNewGame }: GameResultProps)
 
   const sharePayload = {
     game: 'PopStack',
-    result: `${percentLine(parseFloat(accuracyPercentage))}`,
+    result: restrictionLabel
+      ? `${restrictionLabel} — ${percentLine(parseFloat(accuracyPercentage))}`
+      : percentLine(parseFloat(accuracyPercentage)),
     details: [
       `Target: ${formatNumber(targetNumber)}`,
       `My total: ${formatNumber(result.total)} (${result.difference > 0 ? '+' : ''}${formatNumber(result.difference)})`,

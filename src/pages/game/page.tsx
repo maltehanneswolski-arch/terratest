@@ -364,6 +364,7 @@ export default function GamePage() {
                       result={gameResult}
                       targetNumber={targetNumber}
                       onNewGame={handleNewGame}
+                      restrictionLabel={restrictionData.label}
                     />
                   </div>
                   
