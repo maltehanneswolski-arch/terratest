@@ -199,7 +199,6 @@ export const DE_UI_MASK: Record<string, string> = {
   'Spot the bluff!': 'Finde den Bluff!',
   'Nailed it': 'Genau richtig',
   'Bluffed!': 'Reingefallen!',
-  'Current country': 'Aktuelles Land',
 
   /* ── Dream Country ─────────────────────────────────────────────── */
   'Retake Survey': 'Umfrage wiederholen',

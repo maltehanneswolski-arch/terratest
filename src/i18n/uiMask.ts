@@ -40,7 +40,7 @@ function shouldSkip(node: Node | null): boolean {
   let el = node instanceof Element ? node : node?.parentElement ?? null;
   while (el) {
     if (SKIP_TAGS.has(el.tagName)) return true;
-    if (el.isContentEditable) return true;
+    if (el instanceof HTMLElement && el.isContentEditable) return true;
     if (el.getAttribute('translate') === 'no') return true;
     el = el.parentElement;
   }
