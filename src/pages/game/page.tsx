@@ -125,8 +125,11 @@ export default function GamePage() {
     const seed = hashString(dateString);
 
     const restriction = generateRestriction(seed);
-    const bonus = generateCompatibleBonus(seed, restriction);
+    // Target first: the bonus has to be attainable *given* the target, so it
+    // can't be chosen until the target exists. Previously the bonus was picked
+    // blind, which produced impossible days like "Above 10M" with a 4.4M target.
     const target = pickReachableTarget(seed, restriction);
+    const bonus = generateCompatibleBonus(seed, restriction, target);
 
     setRestrictionData(restriction);
     setBonusData(bonus);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { readStoredJson } from '@/lib/storage';
+import { shareResult } from '@/lib/shareResult';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 import { CityCard } from './components/CityCard';
@@ -365,17 +366,26 @@ export default function ElevationPage() {
     let city1 = shuffled1[Math.floor(Math.random() * shuffled1.length)];
     let city2 = shuffled2[Math.floor(Math.random() * shuffled2.length)];
     
-    // Ensure cities are different and from different countries for variety
+    // Cities must differ in name, country AND elevation. Equal elevations make
+    // "which city sits higher?" unanswerable — and because the check below uses
+    // `>=`, a tie silently marked BOTH answers correct.
     let attempts = 0;
-    while ((city1.name === city2.name || city1.country === city2.country) && attempts < 20) {
+    while (
+      (city1.name === city2.name ||
+        city1.country === city2.country ||
+        city1.elevation === city2.elevation) &&
+      attempts < 20
+    ) {
       const newShuffled = [...citiesToUse].sort(() => Math.random() - 0.5);
       city2 = newShuffled[Math.floor(Math.random() * newShuffled.length)];
       attempts++;
     }
     
-    // Final fallback to ensure different cities
-    if (city1.name === city2.name) {
-      const differentCities = citiesToUse.filter(c => c.name !== city1.name);
+    // Final fallback: guarantee a decidable pair even if the loop above gave up.
+    if (city1.name === city2.name || city1.elevation === city2.elevation) {
+      const differentCities = citiesToUse.filter(
+        (c) => c.name !== city1.name && c.elevation !== city1.elevation,
+      );
       if (differentCities.length > 0) {
         city2 = differentCities[Math.floor(Math.random() * differentCities.length)];
       }
@@ -466,24 +476,15 @@ export default function ElevationPage() {
     const accuracy = gameStats.totalAttempts > 0 ? 
       Math.round((gameStats.totalCorrect / gameStats.totalAttempts) * 100) : 0;
     
-    const shareText = `⬆️ Up or Down ⬇️ - Elevation Game
-🏔️ My Best Streak: ${gameStats.bestStreak}
-🎯 Accuracy: ${accuracy}%
-🎮 Games Played: ${gameStats.totalGames}
-
-Can you beat my score? Play at: ${window.location.href}`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: 'Up or Down - Elevation Game',
-        text: shareText,
-        url: window.location.href
-      });
-    } else {
-      navigator.clipboard.writeText(shareText).then(() => {
-        alert('Results copied to clipboard!');
-      });
-    }
+    void shareResult({
+      game: 'Elevation',
+      result: `best streak ${gameStats.bestStreak}`,
+      details: [
+        `Accuracy: ${accuracy}%`,
+        `Games played: ${gameStats.totalGames}`,
+      ],
+      path: '/elevation',
+    });
   };
 
   return (

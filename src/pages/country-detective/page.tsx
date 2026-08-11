@@ -7,6 +7,7 @@ import { META } from './country-detective-meta';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 import { canonicalizeCountry, getCountryMetricPool, getMetricById, isPlayableCountryName, publicMetricLabel } from '@/lib/metricData';
 
 type V = string | number | null;
@@ -1105,25 +1106,15 @@ export default function CountryDetectivePage() {
       const answerLine = r.isCorrect ? '' : ` (Answer: ${target})`;
       return `Round ${i + 1}: ${score} ${hintLine}${answerLine}`;
     });
-    const shareUrl = `${window.location.origin}/country-detective`;
-    const text = ['🕵️ Country Detective (1 Round)', ...lines, '', `Play at: ${shareUrl}`].join('\n');
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Country Detective', text });
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
-      } catch {
-        setCopied(false);
-      }
-    }
+    const solved = multiState.rounds.filter((r) => r.isCorrect).length;
+    const ok = await copyShareResult({
+      game: 'Country Detective',
+      result: `${solved}/${multiState.rounds.length} solved`,
+      details: ['', ...lines],
+      path: '/country-detective',
+    });
+    setCopied(ok);
+    window.setTimeout(() => setCopied(false), 2000);
   }
 
   if (!multiState || !currentRound) {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { landData } from '@/mocks/area-data';
 import { COUNTRY_METADATA } from '@/pages/game/data/countryMetadata';
@@ -323,7 +324,6 @@ function getRevealedCountry(border: BorderlineEntry) {
 
 function buildShareText(dateKey: string, results: RoundResult[], mode: ShareMode) {
   const solvedCount = results.filter((result) => result.solved).length;
-  const heading = `Borderline ${dateKey}`;
   const summary = `${solvedCount}/${TOTAL_ROUNDS} borders solved`;
 
   const lines = results.map((result, index) => {
@@ -337,7 +337,7 @@ function buildShareText(dateKey: string, results: RoundResult[], mode: ShareMode
     return `R${index + 1} ${status} ${triesText}`;
   });
 
-  return [heading, summary, ...lines].join('\n');
+  return { summary, lines };
 }
 
 function setsMatch(first: string, second: string, targetA: string, targetB: string) {
@@ -696,26 +696,18 @@ export default function BorderlinePage() {
   const handleShareCopy = async (mode: ShareMode) => {
     if (!challengeComplete) return;
 
-    const shareText = buildShareText(dailyDateKey, roundResults, mode);
+    const { summary, lines } = buildShareText(dailyDateKey, roundResults, mode);
+    const ok = await copyShareResult({
+      game: 'Borderline',
+      result: summary,
+      details: [`Daily ${dailyDateKey}`, '', ...lines],
+      path: '/borderline',
+    });
 
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareText);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = shareText;
-        textarea.setAttribute('readonly', 'true');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-
+    if (ok) {
       setShareFeedback(mode === 'spoilers' ? 'Copied spoiler share text.' : 'Copied spoiler-free share text.');
       setShowShareMenu(false);
-    } catch {
+    } else {
       setShareFeedback('Could not copy the share text.');
     }
   };

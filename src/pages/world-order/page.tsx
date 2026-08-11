@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { WORLD_ORDER_METRICS, type WorldOrderCountryData, type WorldOrderMetric } from './world-order-metrics';
 import { readStoredJson } from '@/lib/storage';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 
@@ -185,6 +186,7 @@ export default function WorldOrderPage() {
   const [openDropdown, setOpenDropdown] = useState<GuessPosition | null>(null);
   const [gameComplete, setGameComplete] = useState(false);
   const { record: recordRun } = useGameStats('world-order');
+  const [shareCopied, setShareCopied] = useState(false);
   const [showInstructionModal, setShowInstructionModal] = useState(true);
   const [showInlineInstructions, setShowInlineInstructions] = useState(false);
 
@@ -372,19 +374,14 @@ export default function WorldOrderPage() {
       });
     }
 
-    shareText += `\nPlay at: ${window.location.origin}/world-order`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'World Order', text: shareText });
-        return;
-      } catch {
-        // fall back to clipboard
-      }
-    }
-
-    await navigator.clipboard.writeText(shareText);
-    alert('Result copied to clipboard!');
+    const ok = await copyShareResult({
+      game: 'World Order',
+      result: `${totalScore} pts`,
+      details: ['', shareText.trim()],
+      path: '/world-order',
+    });
+    setShareCopied(ok);
+    window.setTimeout(() => setShareCopied(false), 2000);
   };
 
   const InstructionsContent = () => (

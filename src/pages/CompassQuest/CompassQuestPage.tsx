@@ -4,6 +4,7 @@ import { GameNavbar } from '@/components/ui/game-navbar';
 import { CAPITAL_ROWS } from './compass-capital-data';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { brusselsDate } from '@/lib/brusselsTime';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 
@@ -330,11 +331,13 @@ export default function CompassQuestPage() {
 
   async function shareResult() {
     const lines = results.map((r) => `R${r.round}: ${n(r.error, 0)}° off (${r.score}/100)`).join('\n');
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/compass-quest` : '/compass-quest';
-    const text = [`🧭 Compass Quest [Daily ${dailyLabel()}]`, `${totalScore}/${MAX_ROUNDS * 100} pts · avg error ${n(averageError, 1)}°`, lines, '', `Play at: ${url}`].join('\n');
-    if (navigator.share) { try { await navigator.share({ title: 'Compass Quest', text }); return; } catch { /* fall through */ } }
-    await navigator.clipboard.writeText(text);
-    setCopyFeedback('Copied to clipboard!');
+    const ok = await copyShareResult({
+      game: 'Compass Quest',
+      result: `${totalScore}/${MAX_ROUNDS * 100} pts · avg error ${n(averageError, 1)}°`,
+      details: [`Daily ${dailyLabel()}`, '', lines],
+      path: '/compass-quest',
+    });
+    setCopyFeedback(ok ? 'Copied to clipboard!' : 'Copy failed — select the text and copy manually.');
   }
 
   return (

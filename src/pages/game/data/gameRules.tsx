@@ -347,6 +347,49 @@ export const cityMatchesBonus = (city: City, bonus: BonusData): boolean => {
 const getEligibleCitiesForRestriction = (restriction: RestrictionData): City[] =>
   ALL_CITIES.filter((city) => cityMatchesRestriction(city, restriction));
 
+/**
+ * Can a bonus actually be claimed on a given day?
+ *
+ * The bonus asks the player to include one particular kind of city in their
+ * three picks, but the target caps what those three can add up to. Checking only
+ * that *some* eligible city matches the bonus is not enough: an "Above 10M"
+ * bonus against a 4.4M target is impossible, because one 10M city already
+ * overshoots on its own. The reverse also happens — "Below 2M" is unreachable
+ * when the target needs three mega-cities.
+ *
+ * So: for at least one bonus-matching city, the target must sit between the
+ * smallest and largest total that city can produce alongside two others.
+ */
+const bonusIsAttainable = (
+  bonus: BonusTemplate,
+  eligibleCities: City[],
+  target: number,
+): boolean => {
+  const matching = eligibleCities.filter((city) => bonus.matches(city));
+  if (matching.length === 0 || eligibleCities.length < 3) return false;
+
+  const ascending = [...eligibleCities].sort((a, b) => a.population - b.population);
+  const descending = [...eligibleCities].sort((a, b) => b.population - a.population);
+
+  const sumOfTwoOthers = (sorted: City[], exclude: City) => {
+    let sum = 0;
+    let taken = 0;
+    for (const city of sorted) {
+      if (city === exclude) continue;
+      sum += city.population;
+      if (++taken === 2) break;
+    }
+    return taken === 2 ? sum : null;
+  };
+
+  return matching.some((city) => {
+    const lowest = sumOfTwoOthers(ascending, city);
+    const highest = sumOfTwoOthers(descending, city);
+    if (lowest === null || highest === null) return false;
+    return city.population + lowest <= target && target <= city.population + highest;
+  });
+};
+
 
 const stableIndex = (seed: number, length: number, multiplier = 1): number => {
   if (length <= 0) return 0;
@@ -392,18 +435,51 @@ export const generateRestriction = (seed: number): RestrictionData => {
   };
 };
 
-export const generateCompatibleBonus = (seed: number, restriction: RestrictionData): BonusData => {
+export const generateCompatibleBonus = (
+  seed: number,
+  restriction: RestrictionData,
+  /**
+   * The day's target. Required so the bonus can't contradict it — see
+   * bonusIsAttainable. Optional only so older call sites keep compiling; when
+   * omitted the attainability filter is skipped.
+   */
+  target?: number,
+): BonusData => {
   const eligibleCities = getEligibleCitiesForRestriction(restriction);
   const compatibleBonuses = bonusTemplates.filter((bonus) => {
     if (bonus.id === 'country-dynamic') {
       return new Set(eligibleCities.map((city) => city.country)).size > 0;
     }
 
-    return eligibleCities.some((city) => bonus.matches(city));
+    if (!eligibleCities.some((city) => bonus.matches(city))) return false;
+
+    // A bonus that cannot coexist with the target is worse than no bonus: the
+    // player chases points that were never obtainable.
+    if (typeof target === 'number' && !bonusIsAttainable(bonus, eligibleCities, target)) {
+      return false;
+    }
+
+    return true;
   });
 
   const curatedBonuses = compatibleBonuses.filter((bonus) => !isRedundantBonusForRestriction(bonus, restriction));
-  const bonusPool = curatedBonuses.length > 0 ? curatedBonuses : compatibleBonuses;
+
+  // Last-resort pool. The attainability filter above can in principle empty
+  // `compatibleBonuses`; indexing an empty array would hand back `undefined`
+  // and throw on the next property access, so fall back to the widest set that
+  // is at least restriction-compatible rather than risk a blank page.
+  const restrictionCompatible = bonusTemplates.filter(
+    (bonus) => bonus.id === 'country-dynamic' || eligibleCities.some((city) => bonus.matches(city)),
+  );
+  const bonusPool =
+    curatedBonuses.length > 0
+      ? curatedBonuses
+      : compatibleBonuses.length > 0
+        ? compatibleBonuses
+        : restrictionCompatible.length > 0
+          ? restrictionCompatible
+          : bonusTemplates;
+
   const bonusIndex = stableIndex(seed + compatibleBonuses.length, bonusPool.length, 23);
   const selectedBonus = bonusPool[bonusIndex];
 

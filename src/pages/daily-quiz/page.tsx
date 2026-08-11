@@ -4,6 +4,7 @@ import { HoverButton } from '@/components/ui/hover-button';
 import { useTranslation } from 'react-i18next';
 import { countriesData } from '@/mocks/countries-capitals';
 import { RulesModal } from '@/components/feature/rules-modal';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 
@@ -23,6 +24,7 @@ export default function DailyQuizPage() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [usedCountries, setUsedCountries] = useState<Set<string>>(new Set());
   const [showRules, setShowRules] = useState(true);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const getCountryCode = (countryName: string): string => {
     const countryCodeMap: { [key: string]: string } = {
@@ -181,21 +183,15 @@ export default function DailyQuizPage() {
   };
 
   const handleShare = async () => {
-    const shareText = `🌍 Capital Clash 🌍\n\nI got a streak of ${streak}! Can you beat my score?\n\nPlay now at TerraTest!`;
     
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Capital Clash',
-          text: shareText,
-        });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
-    } else {
-      navigator.clipboard.writeText(shareText);
-      alert('Score copied to clipboard!');
-    }
+    const ok = await copyShareResult({
+      game: 'Capital Clash',
+      result: `a streak of ${streak}`,
+      details: [`Capitals named correctly in a row: ${streak}`],
+      path: '/daily-quiz',
+    });
+    setShareCopied(ok);
+    window.setTimeout(() => setShareCopied(false), 2000);
   };
 
   if (isGameOver) {
@@ -247,8 +243,8 @@ export default function DailyQuizPage() {
               onClick={handleShare}
               className="flex-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 whitespace-nowrap"
             >
-              <i className="ri-share-line mr-2"></i>
-              {t('share')}
+              <i className={`${shareCopied ? 'ri-check-line' : 'ri-share-line'} mr-2`}></i>
+              {shareCopied ? 'Copied!' : t('share')}
             </button>
           </div>
 

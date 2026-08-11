@@ -13,6 +13,7 @@ import { SlotRow } from './components/SlotRow';
 import { ResultScreen } from './components/ResultScreen';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 
 const TOTAL_ROUNDS = 1;
 const PER_ROUND_MAX = 18; // 5 * 3 + 3 perfect bonus
@@ -328,8 +329,12 @@ function FinalResultScreen({
       });
       return `Round ${i + 1} — ${publicMetricLabel(rounds[i].metric.label)}: ${roundScores[i]}/${PER_ROUND_MAX} ${tiles.join('')}`;
     });
-    const text = `Blind Ranking (Daily — 3 rounds)\nTotal: ${total}/${maxTotal} ${g.emoji}\n\n${lines.join('\n')}\ngeogeeks.app`;
-    navigator.clipboard.writeText(text).catch(() => {});
+    void copyShareResult({
+      game: 'Blind Ranking',
+      result: `${total}/${maxTotal} ${g.emoji}`,
+      details: ['', ...lines],
+      path: '/blind-ranking',
+    });
   };
 
   return (

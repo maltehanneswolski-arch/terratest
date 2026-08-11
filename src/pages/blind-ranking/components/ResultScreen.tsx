@@ -1,5 +1,6 @@
 import { MetricEntry, publicMetricLabel, MetricDataset } from '@/lib/metricData';
 import { getFlagUrl } from '@/lib/countryFlags';
+import { shareResult as copyShareResult } from '@/lib/shareResult';
 
 interface RoundResult {
   entry: MetricEntry;
@@ -61,8 +62,12 @@ function copyShareText(results: RoundResult[], totalScore: number, metricLabel: 
     if (r.points === 1) return '🟧';
     return '🟥';
   });
-  const text = `Blind Ranking — ${publicMetricLabel(metricLabel)}\nScore: ${totalScore}/${PER_ROUND_MAX}\n${tiles.join('')}\ngeogeeks.app`;
-  navigator.clipboard.writeText(text).catch(() => {});
+  void copyShareResult({
+    game: 'Blind Ranking',
+    result: `${totalScore}/${PER_ROUND_MAX}`,
+    details: [publicMetricLabel(metricLabel), tiles.join('')],
+    path: '/blind-ranking',
+  });
 }
 
 export function ResultScreen({ results, totalScore, perfectBonus, metric, actualOrder, onRetry, onNext, roundInfo }: Props) {

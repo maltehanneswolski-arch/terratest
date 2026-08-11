@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { getCountryCode } from '@/pages/game/data/countryMetadata';
+import { shareResult } from '@/lib/shareResult';
 
 interface City {
   name: string;
@@ -22,6 +24,7 @@ interface GameResultProps {
 
 
 export function GameResult({ result, targetNumber, onNewGame }: GameResultProps) {
+  const [copied, setCopied] = useState(false);
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
@@ -44,21 +47,18 @@ export function GameResult({ result, targetNumber, onNewGame }: GameResultProps)
   const rating = getAccuracyRating();
 
   const handleShare = async () => {
-    const shareText = `PopStack Daily Challenge\n\nAccuracy: ${accuracyPercentage}%\n${rating.emoji} ${rating.text}\n\nCities:\n${result.cities.map(c => `${c.name}, ${c.country}`).join('\n')}\n\nPlay at: ${window.location.origin}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'PopStack Challenge',
-          text: shareText,
-        });
-      } catch {
-        console.log('Share cancelled');
-      }
-    } else {
-      navigator.clipboard.writeText(shareText);
-      alert('Results copied to clipboard!');
-    }
+    const ok = await shareResult({
+      game: 'PopStack',
+      result: `${accuracyPercentage}% accuracy ${rating.emoji} ${rating.text}`,
+      details: [
+        '',
+        'My cities:',
+        ...result.cities.map((c) => `· ${c.name}, ${c.country}`),
+      ],
+      path: '/game',
+    });
+    setCopied(ok);
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -135,8 +135,8 @@ export function GameResult({ result, targetNumber, onNewGame }: GameResultProps)
           onClick={handleShare}
           className="flex-1 py-3 px-6 rounded-full font-semibold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-all duration-200 whitespace-nowrap cursor-pointer"
         >
-          <i className="ri-share-line mr-2"></i>
-          Share Results
+          <i className={`${copied ? 'ri-check-line' : 'ri-share-line'} mr-2`}></i>
+          {copied ? 'Copied!' : 'Share Results'}
         </button>
         <button
           onClick={onNewGame}
