@@ -2,7 +2,8 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { WORLD_ORDER_METRICS, type WorldOrderCountryData, type WorldOrderMetric } from './world-order-metrics';
 import { readStoredJson } from '@/lib/storage';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 
@@ -186,7 +187,6 @@ export default function WorldOrderPage() {
   const [openDropdown, setOpenDropdown] = useState<GuessPosition | null>(null);
   const [gameComplete, setGameComplete] = useState(false);
   const { record: recordRun } = useGameStats('world-order');
-  const [shareCopied, setShareCopied] = useState(false);
   const [showInstructionModal, setShowInstructionModal] = useState(true);
   const [showInlineInstructions, setShowInlineInstructions] = useState(false);
 
@@ -340,48 +340,24 @@ export default function WorldOrderPage() {
     });
   };
 
-  const handleShare = async (detailed = false) => {
-    const maxPoints = questions.length * 40;
-    let shareText = `🌍 World Order\n`;
-    shareText += `Score: ${totalScore}/${maxPoints}\n\n`;
-
-    if (detailed) {
-      roundResults.forEach((round, index) => {
-        const metric = getMetric(round.question.metricId);
-        const center = metric?.data.find(country => country.country === round.question.centerCountry);
-        shareText += `Round ${index + 1}: ${metric?.shortLabel ?? 'Round'}\n`;
-        shareText += `${round.totalScore}/40 pts\n`;
-        if (center) {
-          shareText += `Center: ${center.country} (#${center.rank}, ${center.displayValue})\n`;
-        }
-        round.results
-          .slice()
-          .sort((a, b) => positionOrder.indexOf(a.position) - positionOrder.indexOf(b.position))
-          .forEach(result => {
-            shareText += `${getResultEmoji(result.points)} ${getPositionLabel(result.position)}: ${result.guess} (#${result.guessedRank}, ${result.displayValue})\n`;
-          });
-        shareText += `\n`;
-      });
-    } else {
-      roundResults.forEach((round, index) => {
-        const metric = getMetric(round.question.metricId);
-        const summary = round.results
-          .slice()
-          .sort((a, b) => positionOrder.indexOf(a.position) - positionOrder.indexOf(b.position))
-          .map(result => getResultEmoji(result.points))
-          .join('');
-        shareText += `Round ${index + 1} · ${metric?.shortLabel ?? 'Round'}: ${summary} (${round.totalScore}/40)\n`;
-      });
-    }
-
-    const ok = await copyShareResult({
-      game: 'World Order',
-      result: `${totalScore} pts`,
-      details: ['', shareText.trim()],
-      path: '/world-order',
-    });
-    setShareCopied(ok);
-    window.setTimeout(() => setShareCopied(false), 2000);
+  const shareMaxPoints = Math.max(questions.length, 1) * 40;
+  const sharePayload = {
+    game: 'World Order',
+    result: scoreLine(totalScore, shareMaxPoints),
+    details: roundResults.flatMap((round, index) => {
+      const metric = getMetric(round.question.metricId);
+      const ordered = round.results
+        .slice()
+        .sort((a, b) => positionOrder.indexOf(a.position) - positionOrder.indexOf(b.position));
+      const tiles = ordered.map((r) => getResultEmoji(r.points)).join('');
+      return [
+        `${tiles} ${metric?.shortLabel ?? 'Round'} — ${round.totalScore}/40`,
+        `🎯 Centre: ${round.question.centerCountry}`,
+        ...ordered.map((r) => `   ${getResultEmoji(r.points)} ${getPositionLabel(r.position)}: ${r.guess} (#${r.guessedRank})`),
+        index < roundResults.length - 1 ? '' : false,
+      ];
+    }),
+    path: '/world-order',
   };
 
   const InstructionsContent = () => (
@@ -664,22 +640,7 @@ export default function WorldOrderPage() {
                   })}
                 </div>
 
-                <div className="flex gap-3 mt-8">
-                  <button
-                    onClick={() => handleShare(false)}
-                    className="flex-1 py-3 px-6 rounded-full font-semibold bg-purple-500 hover:bg-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <i className="ri-share-line"></i>
-                    Share
-                  </button>
-                  <button
-                    onClick={() => handleShare(true)}
-                    className="flex-1 py-3 px-6 rounded-full font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <i className="ri-file-list-line"></i>
-                    Share Detailed
-                  </button>
-                </div>
+                <ShareButtons share={sharePayload} className="mt-8" />
 
                 <div className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
                   Come back tomorrow for a new challenge.

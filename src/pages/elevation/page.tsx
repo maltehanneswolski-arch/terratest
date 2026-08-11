@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { readStoredJson } from '@/lib/storage';
-import { shareResult } from '@/lib/shareResult';
+import { percentLine, streakEmoji } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 import { CityCard } from './components/CityCard';
@@ -472,19 +473,19 @@ export default function ElevationPage() {
     startNewGame();
   }, []);
 
-  const shareResults = () => {
-    const accuracy = gameStats.totalAttempts > 0 ? 
-      Math.round((gameStats.totalCorrect / gameStats.totalAttempts) * 100) : 0;
-    
-    void shareResult({
-      game: 'Elevation',
-      result: `best streak ${gameStats.bestStreak}`,
-      details: [
-        `Accuracy: ${accuracy}%`,
-        `Games played: ${gameStats.totalGames}`,
-      ],
-      path: '/elevation',
-    });
+  const shareAccuracy = gameStats.totalAttempts > 0
+    ? Math.round((gameStats.totalCorrect / gameStats.totalAttempts) * 100)
+    : 0;
+
+  const sharePayload = {
+    game: 'Elevation',
+    result: `best streak ${gameStats.bestStreak} ${streakEmoji(gameStats.bestStreak)}`,
+    details: [
+      `${percentLine(shareAccuracy)}`,
+      `🎮 Games played: ${gameStats.totalGames}`,
+      `📈 This run: ${streak} ${streakEmoji(streak)}`,
+    ],
+    path: '/elevation',
   };
 
   return (
@@ -541,7 +542,7 @@ export default function ElevationPage() {
                 finalStreak={streak}
                 stats={gameStats}
                 onRestart={startNewGame}
-                onShare={shareResults}
+                share={sharePayload}
               />
               <GameStatsBar gameId="elevation" showStreak={false} className="mx-auto mt-4 max-w-md" />
             </>

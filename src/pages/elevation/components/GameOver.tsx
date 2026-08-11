@@ -1,3 +1,5 @@
+import { ShareButtons } from '@/components/feature/share-buttons';
+import type { ShareDetails } from '@/lib/shareResult';
 
 interface GameStats {
   totalGames: number;
@@ -11,10 +13,10 @@ interface GameOverProps {
   finalStreak: number;
   stats: GameStats;
   onRestart: () => void;
-  onShare: () => void;
+  share: ShareDetails;
 }
 
-export function GameOver({ finalStreak, stats, onRestart, onShare }: GameOverProps) {
+export function GameOver({ finalStreak, stats, onRestart, share }: GameOverProps) {
   const getStreakColor = (streak: number) => {
     if (streak >= 21) return 'text-purple-800';
     if (streak >= 18) return 'text-purple-600';
@@ -213,13 +215,7 @@ export function GameOver({ finalStreak, stats, onRestart, onShare }: GameOverPro
         </div>
 
         <div className="space-y-3">
-          <button
-            onClick={onShare}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-full font-semibold transition-colors whitespace-nowrap"
-          >
-            <i className="ri-share-line mr-2"></i>
-            Share Results
-          </button>
+          <ShareButtons share={share} />
 
           <div className="flex gap-4">
             <button

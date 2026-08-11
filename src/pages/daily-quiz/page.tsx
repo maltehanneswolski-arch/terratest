@@ -4,7 +4,8 @@ import { HoverButton } from '@/components/ui/hover-button';
 import { useTranslation } from 'react-i18next';
 import { countriesData } from '@/mocks/countries-capitals';
 import { RulesModal } from '@/components/feature/rules-modal';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { streakEmoji } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 
@@ -24,7 +25,6 @@ export default function DailyQuizPage() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [usedCountries, setUsedCountries] = useState<Set<string>>(new Set());
   const [showRules, setShowRules] = useState(true);
-  const [shareCopied, setShareCopied] = useState(false);
 
   const getCountryCode = (countryName: string): string => {
     const countryCodeMap: { [key: string]: string } = {
@@ -182,16 +182,14 @@ export default function DailyQuizPage() {
     generateNewQuestion();
   };
 
-  const handleShare = async () => {
-    
-    const ok = await copyShareResult({
-      game: 'Capital Clash',
-      result: `a streak of ${streak}`,
-      details: [`Capitals named correctly in a row: ${streak}`],
-      path: '/daily-quiz',
-    });
-    setShareCopied(ok);
-    window.setTimeout(() => setShareCopied(false), 2000);
+  const sharePayload = {
+    game: 'Capital Clash',
+    result: `a streak of ${streak} ${streakEmoji(streak)}`,
+    details: [
+      `🏛️ Capitals named in a row: ${streak}`,
+      currentCountry && `❌ Fell on: ${currentCountry.country} (${currentCountry.capital})`,
+    ],
+    path: '/daily-quiz',
   };
 
   if (isGameOver) {
@@ -239,13 +237,7 @@ export default function DailyQuizPage() {
               {t('playAgain')}
             </button>
             
-            <button
-              onClick={handleShare}
-              className="flex-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 whitespace-nowrap"
-            >
-              <i className={`${shareCopied ? 'ri-check-line' : 'ri-share-line'} mr-2`}></i>
-              {shareCopied ? 'Copied!' : t('share')}
-            </button>
+            <ShareButtons share={sharePayload} className="flex-1" />
           </div>
 
           <HoverButton

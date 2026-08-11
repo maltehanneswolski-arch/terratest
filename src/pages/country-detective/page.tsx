@@ -7,7 +7,8 @@ import { META } from './country-detective-meta';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 import { canonicalizeCountry, getCountryMetricPool, getMetricById, isPlayableCountryName, publicMetricLabel } from '@/lib/metricData';
 
 type V = string | number | null;
@@ -944,7 +945,6 @@ export default function CountryDetectivePage() {
   const { record: recordRound } = useGameStats('country-detective');
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
   const [showRules, setShowRules] = useState(true);
 
   useEffect(() => {
@@ -1096,26 +1096,20 @@ export default function CountryDetectivePage() {
     setSuggestions([]);
   }
 
-  async function share() {
-    if (!multiState) return;
-    const lines = multiState.rounds.map((r, i) => {
-      const target = countryName(DATA[r.targetIndex]);
-      const rHintCount = (r.revealedBonusLevels || []).length;
-      const score = r.isCorrect ? `✅ ${r.attempts}/${MAX_ATTEMPTS}` : `❌ X/${MAX_ATTEMPTS}`;
-      const hintLine = rHintCount === 0 ? '💡 No hints' : `💡 ${rHintCount} hint${rHintCount === 1 ? '' : 's'}`;
-      const answerLine = r.isCorrect ? '' : ` (Answer: ${target})`;
-      return `Round ${i + 1}: ${score} ${hintLine}${answerLine}`;
-    });
-    const solved = multiState.rounds.filter((r) => r.isCorrect).length;
-    const ok = await copyShareResult({
-      game: 'Country Detective',
-      result: `${solved}/${multiState.rounds.length} solved`,
-      details: ['', ...lines],
-      path: '/country-detective',
-    });
-    setCopied(ok);
-    window.setTimeout(() => setCopied(false), 2000);
-  }
+  const sharePayload = multiState
+    ? {
+        game: 'Country Detective',
+        result: `${scoreLine(multiState.rounds.filter((r) => r.isCorrect).length, multiState.rounds.length)} solved`,
+        details: multiState.rounds.map((r, i) => {
+          const hints = (r.revealedBonusLevels || []).length;
+          const mark = r.isCorrect ? '✅' : '❌';
+          const tries = r.isCorrect ? `${r.attempts}/${MAX_ATTEMPTS} guesses` : 'not solved';
+          const hintText = hints === 0 ? '💡 no hints' : `💡 ${hints} hint${hints === 1 ? '' : 's'}`;
+          return `${mark} Round ${i + 1}: ${tries} · ${hintText} — ${countryName(DATA[r.targetIndex])}`;
+        }),
+        path: '/country-detective',
+      }
+    : { game: 'Country Detective', result: '', path: '/country-detective' };
 
   if (!multiState || !currentRound) {
     return <div className="app-page-shell grid min-h-screen place-items-center bg-slate-950 text-slate-200">Loading…</div>;
@@ -1165,12 +1159,7 @@ export default function CountryDetectivePage() {
             })}
           </div>
           <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <button
-              onClick={share}
-              className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-3 px-6 rounded-full font-semibold transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <i className="ri-share-line mr-2"></i>Share Results
-            </button>
+            <ShareButtons share={sharePayload} className="flex-1" />
             <button
               onClick={resetGame}
               className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 py-3 px-6 rounded-full font-semibold transition-colors whitespace-nowrap cursor-pointer"
@@ -1178,7 +1167,6 @@ export default function CountryDetectivePage() {
               <i className="ri-refresh-line mr-2"></i>Play Again
             </button>
           </div>
-          {copied && <p className="mt-3 text-center text-sm text-slate-500 dark:text-slate-400">Copied!</p>}
         </div>
       </div>
     );

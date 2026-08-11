@@ -1,74 +1,115 @@
 /**
- * One share format for every game.
+ * One share format for every game, in two flavours.
  *
- * Produces:
- *
- *   I played Border Domino on TerraTest!
- *
- *   My result: 7 borders crossed
- *   Rule: must be farther north
- *   Start: 🇩🇪 Germany
- *
- *   Can you beat my score?
- *   https://terratest.example/border-domino
+ *   'summary'  — headline only. Safe to post publicly: no answers spoiled.
+ *   'detailed' — adds the game-specific breakdown (cities picked, chain built,
+ *                per-round errors), which usually reveals answers.
  *
  * The text is copied straight to the clipboard. We deliberately do NOT call
- * navigator.share first: on desktop it usually doesn't exist, and on mobile it
- * opens a share sheet, so "copy" became a two-step action that behaved
- * differently per device. Copying immediately is predictable everywhere, and
- * the player can paste wherever they like.
+ * navigator.share: on desktop it usually doesn't exist, and on mobile it opens
+ * a share sheet, so "copy" behaved differently per device.
  */
 
+export type ShareMode = 'summary' | 'detailed';
+
 export interface ShareDetails {
-  /** Display name of the game, e.g. "Border Domino". */
+  /** Display name, e.g. "Border Domino". */
   game: string;
-  /** One-line headline result, e.g. "7 borders crossed" or "14 / 18 points". */
+  /** Headline result. Include a grade emoji via the helpers below. */
   result: string;
   /**
-   * Extra game-specific lines: today's rule, the emoji grid, the chain, etc.
-   * Falsy entries are dropped so callers can inline conditionals.
+   * Breakdown lines, included only in 'detailed'. Falsy entries are dropped so
+   * callers can inline conditionals; empty strings are kept as blank lines.
    */
   details?: Array<string | false | null | undefined>;
-  /** Path to link back to, e.g. "/border-domino". Defaults to the current page. */
+  /** Path to link back to. Defaults to the current page. */
   path?: string;
 }
 
-export function buildShareText({ game, result, details = [], path }: ShareDetails): string {
+/* ── Emoji grading ──────────────────────────────────────────────────────── */
+
+/** A single grade badge for a 0-100 percentage. */
+export function gradeEmoji(percent: number): string {
+  if (percent >= 100) return '🏆';
+  if (percent >= 90) return '🌟';
+  if (percent >= 75) return '✅';
+  if (percent >= 50) return '👍';
+  if (percent >= 25) return '😅';
+  return '💀';
+}
+
+/** Coloured square matching the same bands — used for per-item tiles. */
+export function gradeSquare(percent: number): string {
+  if (percent >= 90) return '🟩';
+  if (percent >= 75) return '🟢';
+  if (percent >= 50) return '🟨';
+  if (percent >= 25) return '🟧';
+  return '🟥';
+}
+
+/** Five-block progress bar, e.g. 🟩🟩🟩🟩⬜ for 80%. */
+export function scoreBar(percent: number, blocks = 5): string {
+  const clamped = Math.max(0, Math.min(100, percent));
+  const filled = Math.round((clamped / 100) * blocks);
+  const square = gradeSquare(clamped);
+  return square.repeat(filled) + '⬜'.repeat(Math.max(0, blocks - filled));
+}
+
+/** Streak heat: colder for short runs, hotter as it grows. */
+export function streakEmoji(streak: number): string {
+  if (streak >= 25) return '🔥🔥🔥';
+  if (streak >= 15) return '🔥🔥';
+  if (streak >= 8) return '🔥';
+  if (streak >= 4) return '⚡';
+  if (streak >= 1) return '✨';
+  return '🧊';
+}
+
+/** Formats "12 / 18" plus a badge and bar from the implied percentage. */
+export function scoreLine(score: number, max: number): string {
+  const pct = max > 0 ? (score / max) * 100 : 0;
+  return `${score}/${max} ${gradeEmoji(pct)} ${scoreBar(pct)}`;
+}
+
+/** Percentage with one decimal, a badge and a bar. */
+export function percentLine(percent: number, label = 'accuracy'): string {
+  return `${percent.toFixed(1)}% ${label} ${gradeEmoji(percent)} ${scoreBar(percent)}`;
+}
+
+/* ── Text building ──────────────────────────────────────────────────────── */
+
+export function buildShareText(
+  { game, result, details = [], path }: ShareDetails,
+  mode: ShareMode = 'summary',
+): string {
   const link =
     typeof window === 'undefined'
       ? ''
       : `${window.location.origin}${path ?? window.location.pathname}`;
 
-  // Drop only the falsy placeholders callers use for conditionals. An empty
-  // string is a deliberate blank line, so `filter(Boolean)` would eat the very
-  // separators that keep the message readable.
-  const body = details
-    .filter((line): line is string => typeof line === 'string')
-    .join('\n');
+  const lines = [`I played ${game} on TerraTest!`, '', `My result: ${result}`];
 
-  return [
-    `I played ${game} on TerraTest!`,
-    '',
-    `My result: ${result}`,
-    body,
-    '',
-    'Can you beat my score?',
-    link,
-  ]
-    .filter((line, index, all) => {
-      // Collapse the blank line that appears when there are no detail lines.
-      if (line !== '') return true;
-      return all[index - 1] !== '';
-    })
+  if (mode === 'detailed') {
+    // Keep '' entries: they are deliberate blank lines. Only drop the
+    // false/null placeholders callers use for conditionals.
+    const body = details.filter((line): line is string => typeof line === 'string');
+    if (body.length > 0) lines.push('', ...body);
+  }
+
+  lines.push('', 'Can you beat my score?', link);
+
+  return lines
     .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
+/* ── Clipboard ──────────────────────────────────────────────────────────── */
+
 /**
- * Copies text to the clipboard, falling back to a hidden textarea where the
- * async Clipboard API is unavailable or blocked (older Safari, insecure origin).
- * Resolves true only if the copy actually happened, so callers can show honest
- * feedback rather than claiming success unconditionally.
+ * Copies text, falling back to a hidden textarea where the async Clipboard API
+ * is unavailable or blocked. Resolves true only if the copy actually happened,
+ * so callers can show honest feedback.
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -83,7 +124,6 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     const textarea = document.createElement('textarea');
     textarea.value = text;
-    // Keep it off-screen and non-focusable so the page doesn't jump.
     textarea.setAttribute('readonly', '');
     textarea.style.position = 'fixed';
     textarea.style.top = '-1000px';
@@ -98,7 +138,10 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** Build the standard text and copy it in one step. */
-export async function shareResult(details: ShareDetails): Promise<boolean> {
-  return copyToClipboard(buildShareText(details));
+/** Build the standard text for a mode and copy it in one step. */
+export async function shareResult(
+  details: ShareDetails,
+  mode: ShareMode = 'summary',
+): Promise<boolean> {
+  return copyToClipboard(buildShareText(details, mode));
 }

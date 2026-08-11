@@ -4,7 +4,8 @@ import { GameNavbar } from '@/components/ui/game-navbar';
 import { CAPITAL_ROWS } from './compass-capital-data';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { brusselsDate } from '@/lib/brusselsTime';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine, gradeSquare } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
 
@@ -329,16 +330,17 @@ export default function CompassQuestPage() {
     }
   }
 
-  async function shareResult() {
-    const lines = results.map((r) => `R${r.round}: ${n(r.error, 0)}° off (${r.score}/100)`).join('\n');
-    const ok = await copyShareResult({
-      game: 'Compass Quest',
-      result: `${totalScore}/${MAX_ROUNDS * 100} pts · avg error ${n(averageError, 1)}°`,
-      details: [`Daily ${dailyLabel()}`, '', lines],
-      path: '/compass-quest',
-    });
-    setCopyFeedback(ok ? 'Copied to clipboard!' : 'Copy failed — select the text and copy manually.');
-  }
+  const sharePayload = {
+    game: 'Compass Quest',
+    result: scoreLine(totalScore, MAX_ROUNDS * 100),
+    details: [
+      `🧭 Daily ${dailyLabel()}`,
+      `📐 Average error: ${n(averageError, 1)}°`,
+      '',
+      ...results.map((r) => `${gradeSquare(r.score)} R${r.round}: ${n(r.error, 0)}° off (${r.score}/100)`),
+    ],
+    path: '/compass-quest',
+  };
 
   return (
     <div className="app-page-shell min-h-screen bg-gradient-to-br from-slate-50 via-rose-50 to-orange-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -733,13 +735,7 @@ export default function CompassQuestPage() {
                 </div>
               </div>
 
-              <div className="flex justify-center">
-                <button onClick={shareResult}
-                  className="px-8 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
-                  <i className="ri-share-line"></i> Share result
-                </button>
-              </div>
-              {copyFeedback && <div className="mt-4 text-sm text-sky-600 dark:text-sky-400 font-medium">{copyFeedback}</div>}
+              <ShareButtons share={sharePayload} className="justify-center" />
             </div>
 
             {/* Round breakdown */}

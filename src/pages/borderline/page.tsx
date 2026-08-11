@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { GameNavbar } from '@/components/ui/game-navbar';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine, gradeSquare, gradeEmoji } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { landData } from '@/mocks/area-data';
 import { COUNTRY_METADATA } from '@/pages/game/data/countryMetadata';
@@ -322,22 +323,28 @@ function getRevealedCountry(border: BorderlineEntry) {
   return seededShuffle([border.countryA, border.countryB], `${border.id}:reveal`)[0];
 }
 
-function buildShareText(dateKey: string, results: RoundResult[], mode: ShareMode) {
+function buildSharePayload(dateKey: string, results: RoundResult[]) {
   const solvedCount = results.filter((result) => result.solved).length;
-  const summary = `${solvedCount}/${TOTAL_ROUNDS} borders solved`;
+  const tiles = results.map((r) => (r.solved ? gradeSquare(((MAX_TRIES - r.attemptsUsed + 1) / MAX_TRIES) * 100) : '🟥')).join('');
 
-  const lines = results.map((result, index) => {
-    const status = result.solved ? '✅' : '❌';
-    const triesText = result.solved ? `${result.attemptsUsed}/${MAX_TRIES} tries` : `missed in ${MAX_TRIES}`;
-
-    if (mode === 'spoilers') {
-      return `R${index + 1} ${status} ${result.countryA} + ${result.countryB} · ${triesText}`;
-    }
-
-    return `R${index + 1} ${status} ${triesText}`;
-  });
-
-  return { summary, lines };
+  return {
+    game: 'Borderline',
+    // With a single round the bar already says everything the tile would, so
+    // only append per-round tiles when there is more than one.
+    result: TOTAL_ROUNDS > 1
+      ? `${scoreLine(solvedCount, TOTAL_ROUNDS)} ${tiles}`
+      : `${solvedCount === TOTAL_ROUNDS ? 'solved' : 'missed'} in ${results[0]?.attemptsUsed ?? MAX_TRIES}/${MAX_TRIES} tries ${solvedCount === TOTAL_ROUNDS ? gradeEmoji(((MAX_TRIES - (results[0]?.attemptsUsed ?? MAX_TRIES) + 1) / MAX_TRIES) * 100) : '💀'}`,
+    details: [
+      `🗓️ Daily ${dateKey}`,
+      '',
+      ...results.map((result, index) => {
+        const status = result.solved ? '✅' : '❌';
+        const tries = result.solved ? `${result.attemptsUsed}/${MAX_TRIES} tries` : `missed in ${MAX_TRIES}`;
+        return `${status} ${result.countryA} + ${result.countryB} · ${tries}`;
+      }),
+    ],
+    path: '/borderline',
+  };
 }
 
 function setsMatch(first: string, second: string, targetA: string, targetB: string) {
@@ -693,24 +700,7 @@ export default function BorderlinePage() {
     setShareFeedback(null);
   };
 
-  const handleShareCopy = async (mode: ShareMode) => {
-    if (!challengeComplete) return;
-
-    const { summary, lines } = buildShareText(dailyDateKey, roundResults, mode);
-    const ok = await copyShareResult({
-      game: 'Borderline',
-      result: summary,
-      details: [`Daily ${dailyDateKey}`, '', ...lines],
-      path: '/borderline',
-    });
-
-    if (ok) {
-      setShareFeedback(mode === 'spoilers' ? 'Copied spoiler share text.' : 'Copied spoiler-free share text.');
-      setShowShareMenu(false);
-    } else {
-      setShareFeedback('Could not copy the share text.');
-    }
-  };
+  const sharePayload = buildSharePayload(dailyDateKey, roundResults);
 
 
   return (
@@ -944,43 +934,7 @@ export default function BorderlinePage() {
                       <GameStatsBar gameId="borderline" className="mt-3" />
                     </div>
 
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowShareMenu((value) => !value)}
-                        className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:border-violet-700 dark:hover:bg-violet-900/30"
-                      >
-                        <i className="ri-share-forward-line"></i>
-                        Share
-                      </button>
-
-                      {showShareMenu ? (
-                        <div className="absolute right-0 z-20 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                          <button
-                            type="button"
-                            onClick={() => void handleShareCopy('spoilers')}
-                            className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                          >
-                            <i className="ri-file-copy-line mt-0.5 text-violet-600 dark:text-violet-400"></i>
-                            <span>
-                              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">Copy with spoilers</span>
-                              <span className="block text-xs text-slate-500 dark:text-slate-400">Includes countries and tries per round.</span>
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleShareCopy('safe')}
-                            className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                          >
-                            <i className="ri-eye-off-line mt-0.5 text-violet-600 dark:text-violet-400"></i>
-                            <span>
-                              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">Copy spoiler-free</span>
-                              <span className="block text-xs text-slate-500 dark:text-slate-400">Just your success and tries, with no country names.</span>
-                            </span>
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
+                    <ShareButtons share={sharePayload} />
                   </div>
 
                   {shareFeedback ? (

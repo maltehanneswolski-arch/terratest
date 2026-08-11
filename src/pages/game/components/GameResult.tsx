@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { getCountryCode } from '@/pages/game/data/countryMetadata';
-import { shareResult } from '@/lib/shareResult';
+import { percentLine } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 
 interface City {
   name: string;
@@ -24,7 +24,6 @@ interface GameResultProps {
 
 
 export function GameResult({ result, targetNumber, onNewGame }: GameResultProps) {
-  const [copied, setCopied] = useState(false);
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
@@ -46,19 +45,18 @@ export function GameResult({ result, targetNumber, onNewGame }: GameResultProps)
 
   const rating = getAccuracyRating();
 
-  const handleShare = async () => {
-    const ok = await shareResult({
-      game: 'PopStack',
-      result: `${accuracyPercentage}% accuracy ${rating.emoji} ${rating.text}`,
-      details: [
-        '',
-        'My cities:',
-        ...result.cities.map((c) => `· ${c.name}, ${c.country}`),
-      ],
-      path: '/game',
-    });
-    setCopied(ok);
-    window.setTimeout(() => setCopied(false), 2000);
+  const sharePayload = {
+    game: 'PopStack',
+    result: percentLine(parseFloat(accuracyPercentage)),
+    details: [
+      `Target: ${formatNumber(targetNumber)}`,
+      `My total: ${formatNumber(result.total)} (${result.difference > 0 ? '+' : ''}${formatNumber(result.difference)})`,
+      result.hasBonusCountry && '⭐ Bonus claimed — gap halved',
+      '',
+      'My cities:',
+      ...result.cities.map((c) => `🏙️ ${c.name}, ${c.country} — ${formatNumber(c.population)}`),
+    ],
+    path: '/game',
   };
 
   return (
@@ -131,13 +129,7 @@ export function GameResult({ result, targetNumber, onNewGame }: GameResultProps)
       </div>
 
       <div className="flex gap-3">
-        <button
-          onClick={handleShare}
-          className="flex-1 py-3 px-6 rounded-full font-semibold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-all duration-200 whitespace-nowrap cursor-pointer"
-        >
-          <i className={`${copied ? 'ri-check-line' : 'ri-share-line'} mr-2`}></i>
-          {copied ? 'Copied!' : 'Share Results'}
-        </button>
+        <ShareButtons share={sharePayload} className="flex-1" />
         <button
           onClick={onNewGame}
           className="flex-1 py-3 px-6 rounded-full font-semibold bg-red-500 hover:bg-red-600 text-white transition-all duration-200 whitespace-nowrap cursor-pointer"

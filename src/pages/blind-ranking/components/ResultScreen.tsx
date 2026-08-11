@@ -1,6 +1,7 @@
 import { MetricEntry, publicMetricLabel, MetricDataset } from '@/lib/metricData';
 import { getFlagUrl } from '@/lib/countryFlags';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine, gradeSquare } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 
 interface RoundResult {
   entry: MetricEntry;
@@ -55,19 +56,19 @@ function ScoreBar({ score, max }: { score: number; max: number }) {
   );
 }
 
-function copyShareText(results: RoundResult[], totalScore: number, metricLabel: string) {
-  const tiles = results.map((r) => {
-    if (r.points === 3) return '🟩';
-    if (r.points === 2) return '🟨';
-    if (r.points === 1) return '🟧';
-    return '🟥';
-  });
-  void copyShareResult({
+function roundSharePayload(results: RoundResult[], totalScore: number, metricLabel: string) {
+  const tiles = results.map((r) => gradeSquare((r.points / 3) * 100)).join('');
+  return {
     game: 'Blind Ranking',
-    result: `${totalScore}/${PER_ROUND_MAX}`,
-    details: [publicMetricLabel(metricLabel), tiles.join('')],
+    result: scoreLine(totalScore, PER_ROUND_MAX),
+    details: [
+      `📊 ${publicMetricLabel(metricLabel)}`,
+      tiles,
+      '',
+      ...results.map((r) => `${gradeSquare((r.points / 3) * 100)} ${r.entry.country} — guessed #${r.guessedPosition + 1}, actual #${r.actualPosition + 1}`),
+    ],
     path: '/blind-ranking',
-  });
+  };
 }
 
 export function ResultScreen({ results, totalScore, perfectBonus, metric, actualOrder, onRetry, onNext, roundInfo }: Props) {
@@ -195,12 +196,10 @@ export function ResultScreen({ results, totalScore, perfectBonus, metric, actual
               )}
             </button>
           ) : (
-            <button
-              onClick={() => copyShareText(results, totalScore, metric.label)}
-              className="whitespace-nowrap flex-1 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-95 cursor-pointer"
-            >
-              <i className="ri-share-line mr-2"></i>Copy result to share
-            </button>
+            <ShareButtons
+              share={roundSharePayload(results, totalScore, metric.label)}
+              className="flex-1"
+            />
           )}
         </div>
       </div>

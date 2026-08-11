@@ -7,7 +7,8 @@ import { getFlagUrl } from '@/lib/countryFlags';
 import { RulesModal } from '@/components/feature/rules-modal';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 
 interface Country {
   name: string;
@@ -371,7 +372,6 @@ export default function BorderDominoPage() {
   const [gameOverReason, setGameOverReason] = useState('');
   const { record: recordRun } = useGameStats('border-domino');
   const runIdRef = useRef(0);
-  const [shareCopied, setShareCopied] = useState(false);
   const [score, setScore] = useState(0);
   const [optimalChain, setOptimalChain] = useState<Country[]>([]);
   const [optimalChainLoading, setOptimalChainLoading] = useState(true);
@@ -619,25 +619,19 @@ export default function BorderDominoPage() {
     finishGame('You gave up.');
   };
 
-  const handleShare = async () => {
-    const rule = RULE_CONFIG[ruleKey];
-    const startCountry = chain[0];
-    const chainText = chain.map((country) => `${country.flag} ${country.name}`).join(' → ');
-    const best = Math.max(optimalChain.length - 1, 0);
-
-    const ok = await copyShareResult({
-      game: 'Border Domino',
-      result: `${score}/${best} borders crossed`,
-      details: [
-        `Rule: ${rule.label}`,
-        `Start: ${startCountry.flag} ${startCountry.name}`,
-        '',
-        chainText,
-      ],
-      path: '/border-domino',
-    });
-    setShareCopied(ok);
-    window.setTimeout(() => setShareCopied(false), 2000);
+  const shareBest = Math.max(optimalChain.length - 1, 0);
+  const sharePayload = {
+    game: 'Border Domino',
+    result: shareBest > 0
+      ? `${scoreLine(score, shareBest)} borders crossed`
+      : `${score} borders crossed`,
+    details: [
+      `📜 Rule: ${RULE_CONFIG[ruleKey].label}`,
+      chain.length > 0 && `🚩 Start: ${chain[0].flag} ${chain[0].name}`,
+      '',
+      chain.map((c) => `${c.flag} ${c.name}`).join(' → '),
+    ],
+    path: '/border-domino',
   };
 
   const activeRule = RULE_CONFIG[ruleKey];
@@ -785,13 +779,7 @@ export default function BorderDominoPage() {
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={handleShare}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white py-3 px-6 rounded-full font-semibold transition-colors whitespace-nowrap shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    <i className={`${shareCopied ? 'ri-check-line' : 'ri-share-line'} mr-2`}></i>
-                    {shareCopied ? 'Copied!' : 'Share results'}
-                  </button>
+                  <ShareButtons share={sharePayload} className="flex-1" />
                 </div>
               </div>
             </div>

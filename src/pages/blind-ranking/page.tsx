@@ -13,7 +13,8 @@ import { SlotRow } from './components/SlotRow';
 import { ResultScreen } from './components/ResultScreen';
 import { GameStatsBar } from '@/components/feature/game-stats-bar';
 import { useGameStats } from '@/lib/gameStats';
-import { shareResult as copyShareResult } from '@/lib/shareResult';
+import { scoreLine, gradeSquare } from '@/lib/shareResult';
+import { ShareButtons } from '@/components/feature/share-buttons';
 
 const TOTAL_ROUNDS = 1;
 const PER_ROUND_MAX = 18; // 5 * 3 + 3 perfect bonus
@@ -319,22 +320,16 @@ function FinalResultScreen({
 
   const g = grade();
 
-  const copyShare = () => {
-    const lines = roundResults.map((results, i) => {
-      const tiles = results.map((r) => {
-        if (r.points === 3) return '🟩';
-        if (r.points === 2) return '🟨';
-        if (r.points === 1) return '🟧';
-        return '🟥';
-      });
-      return `Round ${i + 1} — ${publicMetricLabel(rounds[i].metric.label)}: ${roundScores[i]}/${PER_ROUND_MAX} ${tiles.join('')}`;
-    });
-    void copyShareResult({
-      game: 'Blind Ranking',
-      result: `${total}/${maxTotal} ${g.emoji}`,
-      details: ['', ...lines],
-      path: '/blind-ranking',
-    });
+  const sharePayload = {
+    game: 'Blind Ranking',
+    result: scoreLine(total, maxTotal),
+    details: [
+      ...roundResults.map((results, i) => {
+        const tiles = results.map((r) => gradeSquare((r.points / 3) * 100)).join('');
+        return `${tiles} ${publicMetricLabel(rounds[i].metric.label)} — ${roundScores[i]}/${PER_ROUND_MAX}`;
+      }),
+    ],
+    path: '/blind-ranking',
   };
 
   return (
@@ -370,12 +365,7 @@ function FinalResultScreen({
           >
             <i className="ri-refresh-line mr-2"></i>Retry
           </button>
-          <button
-            onClick={copyShare}
-            className="whitespace-nowrap flex-1 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 cursor-pointer"
-          >
-            <i className="ri-share-line mr-2"></i>Copy results
-          </button>
+          <ShareButtons share={sharePayload} className="flex-1" />
         </div>
 
         <GameStatsBar gameId="blind-ranking" showStreak={false} className="mt-4" />
